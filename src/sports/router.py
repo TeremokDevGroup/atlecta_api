@@ -1,9 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
 
-from src.sports.dependencies import sport_service
-from .repository import SportRepository
-from .services import SportService
+from .services import SportSQLAlchemyService
 from src.sports.schemas import SportCreate
 
 router = APIRouter(
@@ -18,14 +16,19 @@ async def greeting():
     return {"message": "Hello World"}
 
 
-@router.get("/sports/sports-list")
-async def get_sports(sport_service: Annotated[SportService, Depends(sport_service)]):
-    sports = await sport_service.get_all()
+@router.get("/all")
+async def get_all_sports():
+    sports = await SportSQLAlchemyService().get_all()
     return {"sports": sports}
 
 
+@router.get("/{sport_id}")
+async def get_sport_by_id(sport_id: int):
+    sport = await SportSQLAlchemyService().get_by_id(id=sport_id)
+    return {sport_id: sport}
+
+
 @router.post("/sports/add")
-async def add_sport(sport: Annotated[SportCreate, Depends(SportCreate)],
-                    sport_service: Annotated[SportService, Depends(sport_service)]):
-    sport_id = await sport_service.add_sport(sport)
+async def add_sport(sport: Annotated[SportCreate, Depends(SportCreate)]):
+    sport_id = await SportSQLAlchemyService().add_sport(sport)
     return {"sport_id": sport_id}
