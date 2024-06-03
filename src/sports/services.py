@@ -22,4 +22,5 @@ class SportSQLAlchemyService():
     async def get_by_id(self, id: int) -> Sport:
         async with self.uow:
             sport = await self.uow.sports.get_single(id=id)
+            sport = Sport.model_validate(sport)
             return sport

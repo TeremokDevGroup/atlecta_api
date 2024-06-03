@@ -6,9 +6,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.sports import schemas
+from src.database import Base, metadata, get_async_session
 
-Base = declarative_base()
-metadata = Base.metadata
+# Base = declarative_base()
+# metadata = Base.metadata
 
 
 sports_objects_tags = Table(

@@ -34,16 +34,33 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
 
+class FakeRepository(AbstractRepository):
+    def __init__(self, objects):
+        self._objects = set(objects)
+
+    def add(self, objects):
+        self._objects.add(objects)
+
+    def get(self, reference):
+        return next(b for b in self._objects if b.reference == reference)
+
+    def list(self):
+        return list(self._objects)
+
+
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class JsonRepository(AbstractRepository, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    baseDir = "src/"
+    baseDir = "src/json_storage/"
 
     def __init__(self, model: Type[ModelType]) -> None:
         self.model = model
+
+    async def serialize(self, object: ModelType):
+        return object.model_dump()
 
     async def create(self, data: CreateSchemaType):
         ...
