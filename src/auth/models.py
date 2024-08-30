@@ -1,5 +1,3 @@
-from enum import Enum
-from typing import Set
 import uuid
 
 from fastapi import Depends
@@ -16,16 +14,16 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
-from src.database import get_async_session
+from src.database import Base, metadata, get_async_session
 from src.sports.models import Sport
 
-Base = declarative_base()
-metadata = Base.metadata
+# Base = declarative_base()
+# metadata = Base.metadata
 
 
 user_profiles_sports = Table(
     'user_profiles_sports',
-    metadata,
+    Base.metadata,
     Column('user_profile_id', ForeignKey('user_profile.id'), primary_key=True),
     Column('sport_id', ForeignKey(Sport.id), primary_key=True),
 )
@@ -55,7 +53,7 @@ class UserProfile(Base):
     weight: Mapped[int] = mapped_column()
     bio: Mapped[str] = mapped_column(Text)  # NOTE: deferred=True
 
-    sports: Mapped[Set[Sport]] = relationship(secondary=user_profiles_sports)
+    sports: Mapped[set[Sport]] = relationship(secondary=user_profiles_sports)
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):

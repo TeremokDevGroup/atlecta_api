@@ -1,10 +1,8 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
 
-from src.sports.dependencies import sport_service
-from .repository import SportRepository
-from .services import SportService
-from src.sports.schemas import SportCreate
+from .services import SportObjectSQLAlchemyService, SportSQLAlchemyService
+from src.sports.schemas import SportCreate, SportObjectCreate
 
 router = APIRouter(
     prefix="/sports",
@@ -18,14 +16,37 @@ async def greeting():
     return {"message": "Hello World"}
 
 
-@router.get("/sports/sports-list")
-async def get_sports(sport_service: Annotated[SportService, Depends(sport_service)]):
-    sports = await sport_service.get_all()
+@router.get("/all")
+async def get_all_sports():
+    sports = await SportSQLAlchemyService().get_all()
     return {"sports": sports}
 
 
-@router.post("/sports/add")
-async def add_sport(sport: Annotated[SportCreate, Depends(SportCreate)],
-                    sport_service: Annotated[SportService, Depends(sport_service)]):
-    sport_id = await sport_service.add_sport(sport)
+@router.get("/{sport_id}")
+async def get_sport_by_id(sport_id: int):
+    sport = await SportSQLAlchemyService().get_by_id(id=sport_id)
+    return {sport_id: sport}
+
+
+@router.post("/add")
+async def add_sport(sport: Annotated[SportCreate, Depends(SportCreate)]):
+    sport_id = await SportSQLAlchemyService().add(sport)
     return {"sport_id": sport_id}
+
+
+@router.get("/objects/all")
+async def get_all_sport_objects():
+    sports = await SportObjectSQLAlchemyService().get_all()
+    return {"sport_objects": sports}
+
+
+@router.get("/objects/{sport_object_id}")
+async def get_sport_object_by_id(sport_object_id: int):
+    sport_object = await SportObjectSQLAlchemyService().get_by_id(id=sport_object_id)
+    return {"sport_object": sport_object}
+
+
+@router.post("/objects/add")
+async def add_sport_object(sport_object: Annotated[SportObjectCreate, Depends(SportObjectCreate)]):
+    sport_object = await SportObjectSQLAlchemyService().add(sport_object)
+    return {"sport_object": sport_object}

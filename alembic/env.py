@@ -29,7 +29,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = [sports_metadata, auth_metadata]
+target_metadata = (sports_metadata, auth_metadata)
 
 SQLALCHEMY_DATABASE_URL = database.SQLALCHEMY_DATABASE_URL + "?async_fallback=True"
 config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
