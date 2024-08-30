@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 
 from src.database import async_session_maker
-from src.sports.repository import SportRepository
+from src.repository import SQLAlchemyRepository
+from src.sports.models import Sport, SportObject
+from src.sports.repository import SportObjectRepository, SportRepository
 
 
 class AbstractUnitOfWork(ABC):
@@ -33,8 +35,10 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
     async def __aenter__(self, *args, **kwargs):
         self.session = self.session_factory()
-        self.sports = SportRepository(self.session)
-        # self.sport_objects = SportObjectRepository(self.session)
+        self.sports = SportRepository(
+            db_session=self.session, model=Sport)
+        self.sport_objects = SportObjectRepository(
+            db_session=self.session, model=SportObject)
 
     async def __aexit__(self, *args, **kwargs):
         await self.rollback()
