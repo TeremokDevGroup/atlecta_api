@@ -1,14 +1,13 @@
-import aiofiles
-import json
-
 from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, TypeVar
 
-from src.database import Base, get_async_session
+from src.database import Base
 from pydantic import BaseModel
 
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.utils import parse_pydantic_schema
 
 
 class AbstractRepository(ABC):
@@ -53,38 +52,6 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
-class JsonRepository(AbstractRepository, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    baseDir = "src/json_storage/"
-
-    def __init__(self, model: Type[ModelType]) -> None:
-        self.model = model
-
-    async def serialize(self, object: ModelType):
-        return object.model_dump()
-
-    async def create(self, data: CreateSchemaType):
-        ...
-
-    async def update(self, **kwargs):
-        ...
-
-    async def delete(self, **kwargs):
-        ...
-
-    async def get_single(self, **filters) -> Optional[ModelType] | None:
-        async with aiofiles.open(self.baseDir+f"sport.json", mode='r') as f:
-            contents = await f.read()
-            contents = json.loads(contents)
-            for obj in contents["results"]:
-                for key, value in filters.items():
-                    if obj[key] != value:
-                        break
-                return obj
-
-    async def get_multi(self, **kwargs):
-        ...
-
-
 class SQLAlchemyRepository(AbstractRepository, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def __init__(self, model: Type[ModelType], db_session: AsyncSession) -> None:
@@ -93,7 +60,8 @@ class SQLAlchemyRepository(AbstractRepository, Generic[ModelType, CreateSchemaTy
 
     async def create(self, data: CreateSchemaType) -> ModelType:
         async with self._session_factory as session:
-            instance = self.model(**data)
+            parsed_schema = parse_pydantic_schema(data)
+            instance = self.model(**parsed_schema)
             session.add(instance)
             await session.commit()
             await session.refresh(instance)
@@ -123,13 +91,3 @@ class SQLAlchemyRepository(AbstractRepository, Generic[ModelType, CreateSchemaTy
                 order).limit(limit).offset(offset)
             row = await session.execute(stmt)
             return row.scalars().all()
-
-
-def get_repository(self):
-    config = self.config_reader.get_config()
-    if config["source"] == "json":
-        return JsonRepository(self.model)
-    elif config["source"] == "sql":
-        return SQLAlchemyRepository(self.model, get_async_session())
-    else:
-        raise ValueError("Invalid repository source")
