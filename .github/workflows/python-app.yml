@@ -25,6 +25,15 @@ jobs:
           - 5432:5432
 
     steps:
+      - run: 
+          touch .env
+          echo "
+          DB_HOST_TEST=localhost
+          DB_PORT_TEST=5432
+          DB_NAME_TEST=atlecta_test_db
+          DB_USER_TEST=atlecta_user
+          DB_PASS_TEST=""
+          "
       - uses: actions/checkout@v2
 
       # If you wanted to use multiple Python versions, you'd have specify a matrix in the job and
