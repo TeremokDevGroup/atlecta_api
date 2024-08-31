@@ -34,6 +34,7 @@ jobs:
           DB_USER_TEST=atlecta_user
           DB_PASS_TEST=""
           "
+          cat .env
       - uses: actions/checkout@v2
 
       # If you wanted to use multiple Python versions, you'd have specify a matrix in the job and
