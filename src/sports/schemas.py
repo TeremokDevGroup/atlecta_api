@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
 from src.sports.models import Sport as SportModel
 
@@ -6,9 +6,7 @@ from src.sports.models import Sport as SportModel
 class SportBase(BaseModel):
     name: str
 
-    class Config:
-        from_attributes = True
-        frozen = True
+    model_config = ConfigDict(from_attributes=True, frozen=True)
 
     class Meta:
         orm_model = SportModel
@@ -38,8 +36,7 @@ class SportObjectBase(BaseModel):
     def validate_tags(cls, value: list[SportBase]) -> list[SportBase]:
         return list(set(value))
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SportObjectCreate(SportObjectBase):
