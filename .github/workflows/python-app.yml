@@ -25,14 +25,6 @@ jobs:
           - 5432:5432
 
     steps:
-      - run: touch .env
-      - run: echo "
-          DB_HOST_TEST=localhost \n
-          DB_PORT_TEST=5432 \n
-          DB_NAME_TEST=atlecta_test_db \n
-          DB_USER_TEST=atlecta_user \n
-          DB_PASS_TEST="" \n
-          " >> .env
       - run: cat .env
 
       - uses: actions/checkout@v2
