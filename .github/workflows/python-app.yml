@@ -15,7 +15,7 @@ jobs:
         image: postgres
         env:
           POSTGRES_DB: "atlecta_test_db"
-          POSTGRES_PASSWORD: ""
+          POSTGRES_PASSWORD: "postgres"
           POSTGES_USER: "atlecta_user"
         options: >-
           --health-cmd pg_isready
