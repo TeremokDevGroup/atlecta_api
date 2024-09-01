@@ -27,11 +27,11 @@ jobs:
     steps:
       - run: touch .env
       - run: echo "
-          DB_HOST_TEST=localhost
-          DB_PORT_TEST=5432
-          DB_NAME_TEST=atlecta_test_db
-          DB_USER_TEST=atlecta_user
-          DB_PASS_TEST=""
+          DB_HOST_TEST=localhost \n
+          DB_PORT_TEST=5432 \n
+          DB_NAME_TEST=atlecta_test_db \n
+          DB_USER_TEST=atlecta_user \n
+          DB_PASS_TEST="" \n
           " >> .env
       - run: cat .env
 
