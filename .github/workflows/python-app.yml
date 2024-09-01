@@ -32,7 +32,7 @@ jobs:
           DB_NAME_TEST=atlecta_test_db
           DB_USER_TEST=atlecta_user
           DB_PASS_TEST=""
-          "
+          " >> .env
       - run: cat .env
 
       - uses: actions/checkout@v2
