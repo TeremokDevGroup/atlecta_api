@@ -1,24 +1,17 @@
-import uuid
-
 from fastapi import FastAPI
-from fastapi_users import FastAPIUsers
-
-from src.auth.models import User
-from src.auth.manager import get_user_manager
 from src.auth.auth import auth_backend
 from src.auth.schemas import UserCreate, UserRead
 
 from src.sports import router as sports_router
-
-fastapi_users = FastAPIUsers[User, uuid.UUID](
-    get_user_manager,
-    [auth_backend],
-)
+from src.auth import router as users_router
+from src.auth.auth import fastapi_users
 
 app = FastAPI(
     title="Atlecta API",
 )
-
+app.include_router(
+    users_router.router
+)
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
@@ -27,6 +20,11 @@ app.include_router(
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_verify_router(UserRead),
+    prefix="/auth/verification",
     tags=["auth"],
 )
 
