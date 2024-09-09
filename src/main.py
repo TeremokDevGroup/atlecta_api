@@ -10,9 +10,6 @@ app = FastAPI(
     title="Atlecta API",
 )
 app.include_router(
-    users_router.router
-)
-app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
     tags=["auth"],
@@ -27,7 +24,9 @@ app.include_router(
     prefix="/auth/verification",
     tags=["auth"],
 )
-
+app.include_router(
+    users_router.router
+)
 app.include_router(
     sports_router.router
 )
