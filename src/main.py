@@ -30,3 +30,8 @@ app.include_router(
 app.include_router(
     sports_router.router
 )
+
+
+@app.get("/about")
+async def about():
+    return {"message": "Hello, World!"}
