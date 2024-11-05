@@ -1,20 +1,34 @@
 services:
+  nginx:
+    image: nginx:1.27.2-alpine
+    ports:
+      - 8080:8080
+    configs:
+      - source: nginx_config
+        target: /etc/nginx/nginx.conf
+    networks:
+      - public
+    depends_on:
+      - atlecta_api
+
   postgres:
     image: postgres:latest
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-    ports:
-      - 5433:5432
+    # ports:
+    #   - 5433:5432
     networks:
       - private
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   atlecta_api:
     image: atlecta_api:latest
     build: .
-    ports:
-      - 8001:8080
+    # ports:
+    #   - 8080:8080
     depends_on:
       - postgres
     env_file:
@@ -27,8 +41,17 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
     networks:
       - private
+      - public
+
+volumes:
+  postgres_data:
+
+configs:
+  nginx_config:
+    file: ./nginx.conf
 
 networks:
+  public:
   private:
     driver: bridge
     ipam:
