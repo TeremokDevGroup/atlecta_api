@@ -24,16 +24,14 @@ class SportObjectRepository(SQLAlchemyRepository):
             tags = parsed_schema.pop("tags")
             instance = self.model(**parsed_schema)
 
-            # await session.commit()
-            # await session.refresh(instance, ["tags"])
-
+            # WARNING: Just a feeling I get, that this is so bad...
             for tag in tags:
                 query = select(Sport).where(Sport.name == tag.name)
                 db_tag = (await session.execute(query)).scalar_one_or_none()
 
                 # TODO: Do not create a tag if there is no such tag in database
                 if db_tag is None:
-                    db_tag = Sport(name=tag)
+                    db_tag = tag
                     session.add(db_tag)
 
                 instance.tags.append(db_tag)

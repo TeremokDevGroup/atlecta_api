@@ -38,7 +38,7 @@ class SportObject(Base):
     y_coord: Mapped[float] = mapped_column(Numeric(18, 15), nullable=False)
     address: Mapped[str] = mapped_column(String(255), nullable=True)
 
-    tags: Mapped[set[Sport]] = relationship(
+    tags: Mapped[list[Sport]] = relationship(
         secondary=sport_objects_tags, lazy="selectin")
 
     def __str__(self) -> str:
