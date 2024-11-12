@@ -1,20 +1,22 @@
-from fastapi import FastAPI
+import time
+
+from fastapi import FastAPI, Request
 from src.auth.auth import auth_backend
 from src.auth.schemas import UserCreate, UserRead
 
-from src.database import create_tables_if_not_exists
 from src.sports import router as sports_router
 from src.auth import router as users_router
 from src.auth.auth import fastapi_users
 
-try:
-    create_tables_if_not_exists()
-except Exception as e:
-    print(e)
-
 app = FastAPI(
     title="Atlecta API",
 )
+
+
+@app.get("/about")
+async def about():
+    return {"message": "Hello, World!"}
+
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
@@ -38,6 +40,10 @@ app.include_router(
 )
 
 
-@app.get("/about")
-async def about():
-    return {"message": "Hello, World!"}
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    print("Time took to process the request and return response is {} sec".format(
+        time.time() - start_time))
+    return response
