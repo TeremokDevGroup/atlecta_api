@@ -1,6 +1,4 @@
-from pydantic import parse_obj_as
-
-from src.sports.schemas import Sport, SportCreate, SportObject, SportObjectCreate, SportBase
+from src.sports.schemas import Sport, SportCreate, SportObject, SportObjectCreate
 from src.unitofwork import SQLAlchemyUnitOfWork
 
 
@@ -33,20 +31,14 @@ class SportObjectSQLAlchemyService():
 
     async def add(self, sport_object: SportObjectCreate) -> SportObjectCreate:
         async with self.uow:
-            sports_list = await self.uow.sports.get_multi()
-            sports_list = parse_obj_as(list[SportBase], sports_list)
-
-            for sport in sport_object.tags:
-                if sport not in sports_list:
-                    # TODO: Proper error handling
-                    print("THERE IS NO SUCH SPORT IN DATABASE")
-
             sport_object = await self.uow.sport_objects.create(sport_object)
             return sport_object
 
     async def get_all(self) -> list[SportObject]:
         async with self.uow:
             sport_objects = await self.uow.sport_objects.get_multi()
+            sport_objects = [SportObject.model_validate(
+                sport_object) for sport_object in sport_objects]
             return sport_objects
 
     async def get_by_id(self, id: int) -> SportObject:
