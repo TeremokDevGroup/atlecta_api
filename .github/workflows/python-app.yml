@@ -75,7 +75,7 @@ jobs:
         run: docker-compose down
 
       - name: Start docker-compose
-        run: docker compose up -d
+        run: docker compose up -d --build
 
       - name: Clear dungling images
         run: docker system prune -f
