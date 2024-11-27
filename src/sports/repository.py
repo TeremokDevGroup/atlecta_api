@@ -2,6 +2,7 @@ from typing import Type
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.repository import ModelType, SQLAlchemyRepository
 from src.sports.models import Sport, SportObject
 from src.sports.schemas import SportObjectCreate
