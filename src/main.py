@@ -1,15 +1,24 @@
 import time
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from src.auth.auth import auth_backend
 from src.auth.schemas import UserCreate, UserRead
 
-from src.sports import router as sports_router
-from src.auth import router as users_router
+from src.sports.router import sports_router
+from src.auth.router import auth_router, users_router
 from src.auth.auth import fastapi_users
 
 app = FastAPI(
     title="Atlecta API",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -33,10 +42,13 @@ app.include_router(
     tags=["auth"],
 )
 app.include_router(
-    users_router.router
+    auth_router
 )
 app.include_router(
-    sports_router.router
+    users_router
+)
+app.include_router(
+    sports_router
 )
 
 
