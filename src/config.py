@@ -6,11 +6,23 @@ from dotenv import load_dotenv, find_dotenv
 env_file = find_dotenv("../.env")
 load_dotenv(env_file)
 
-DB_HOST = os.environ.get("DB_HOST")
-DB_PORT = os.environ.get("DB_PORT")
-DB_NAME = os.environ.get("DB_NAME")
-DB_USER = os.environ.get("DB_USER")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
+DEV_MODE = os.environ.get("DEV_MODE")
+
+if DEV_MODE != "true":
+
+    DB_HOST = os.environ.get("DB_HOST")
+    DB_PORT = os.environ.get("DB_PORT")
+    DB_NAME = os.environ.get("DB_NAME")
+    DB_USER = os.environ.get("DB_USER")
+    DB_PASSWORD = os.environ.get("DB_PASSWORD")
+
+else:
+
+    DB_HOST = os.environ.get("DB_DEV_HOST")
+    DB_PORT = os.environ.get("DB_DEV_PORT")
+    DB_NAME = os.environ.get("DB_DEV_NAME")
+    DB_USER = os.environ.get("DB_DEV_USER")
+    DB_PASSWORD = os.environ.get("DB_DEV_PASSWORD")
 
 DB_HOST_TEST = os.environ.get("DB_HOST_TEST")
 DB_PORT_TEST = os.environ.get("DB_PORT_TEST")
