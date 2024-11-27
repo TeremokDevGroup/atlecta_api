@@ -14,10 +14,10 @@ jobs:
 
       - uses: ikalnytskyi/action-setup-postgres@v6
         with:
-          username: atlecta_user
-          password: password
-          database: atlecta_test_db
-          port: 5432
+          username: ${{ secrets.DB_USER_TEST }}
+          password: ${{ secrets.DB_PASSWORD_TEST }}
+          database: ${{ secrets.DB_NAME_TEST }}
+          port: ${{ secrets.DB_PORT_TEST }}
           postgres-version: "16"
         id: postgres
 
@@ -57,9 +57,25 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+
+      - name: Make envfile
+        uses: SpicyPizza/create-envfile@v1
+        with:
+          evnkey_DEV_MODE: false
+          envkey_DB_HOST: ${{ secrets.DB_HOST }}
+          envkey_DB_PORT: ${{ secrets.DB_PORT }}
+          envkey_DB_NAME: ${{ secrets.DB_NAME }}
+          envkey_DB_USER: ${{ secrets.DB_USER }}
+          envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          envkey_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          envkey_NGINX_CONF_PATH: ${{ secrets.NGINX_CONF_PATH }}
+          file_name: .env
+
       - name: Stop containers and networks
         run: docker-compose down
+
       - name: Start docker-compose
         run: docker compose up -d
+
       - name: Clear dungling images
         run: docker system prune -f
