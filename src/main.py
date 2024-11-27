@@ -24,7 +24,7 @@ app.add_middleware(
 
 @app.get("/about")
 async def about():
-    return {"message": "Hello, World!"}
+    return {"message": "CI/CD is working!"}
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
