@@ -34,6 +34,8 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     # Also this way we decompose 'user' to 'user_account' and 'user_profile'
     __tablename__ = "user_account"
     profile: Mapped["UserProfile"] = relationship(back_populates="user")
+    # created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
+    # last_edited: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
 class UserProfile(Base):
@@ -53,7 +55,8 @@ class UserProfile(Base):
     weight: Mapped[int] = mapped_column()
     bio: Mapped[str] = mapped_column(Text)  # NOTE: deferred=True
 
-    sports: Mapped[set[Sport]] = relationship(secondary=user_profiles_sports)
+    sports: Mapped[list[Sport]] = relationship(
+        secondary=user_profiles_sports, lazy="selectin")
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
