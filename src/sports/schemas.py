@@ -11,6 +11,9 @@ class SportBase(BaseModel):
     class Meta:
         orm_model = SportModel
 
+    def __eq__(self, other):
+        return self.name == other.name
+
 
 class SportCreate(SportBase):
     pass
@@ -18,9 +21,6 @@ class SportCreate(SportBase):
 
 class Sport(SportBase):
     id: int
-
-    def __eq__(self, other):
-        return self.name == other.name
 
 
 class SportObjectBase(BaseModel):
