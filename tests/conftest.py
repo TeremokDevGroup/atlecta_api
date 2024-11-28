@@ -13,9 +13,8 @@ from src.config import (DB_HOST_TEST, DB_NAME_TEST, DB_PASS_TEST, DB_PORT_TEST,
 from src.main import app
 
 # DATABASE
-# DATABASE_URL_TEST = f"postgresql+asyncpg://{DB_USER_TEST}:{
-#     DB_PASS_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
-DATABASE_URL_TEST = "postgresql+asyncpg://atlecta_user:password@localhost:5432/atlecta_test_db"
+DATABASE_URL_TEST = f"postgresql+asyncpg://{DB_USER_TEST}:{
+    DB_PASS_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = async_sessionmaker(
