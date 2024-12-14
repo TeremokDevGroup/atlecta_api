@@ -1,22 +1,32 @@
 import uuid
+import redis.asyncio
 
 from fastapi_users import FastAPIUsers
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
     JWTStrategy,
+    RedisStrategy,
 )
 
 from src.auth.manager import get_user_manager
 from src.auth.models import User
-from src.config import AUTH_SECRET
+from src.config import AUTH_SECRET, REDIS_HOST, REDIS_PORT
 
 SECRET = AUTH_SECRET
 
+
 bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
+redis = redis.asyncio.from_url(
+    f"redis://{REDIS_HOST}:{REDIS_PORT}", decode_responses=True)
 
-# TODO: rewrite this using key pairs
+
+# NOTE: We are using this one, because it supports token invalidation
+def get_redis_stretegy() -> RedisStrategy:
+    return RedisStrategy(redis, lifetime_seconds=3600)
+
+
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
 
@@ -24,7 +34,7 @@ def get_jwt_strategy() -> JWTStrategy:
 auth_backend = AuthenticationBackend(
     name="jwt",
     transport=bearer_transport,
-    get_strategy=get_jwt_strategy,
+    get_strategy=get_redis_stretegy,
 )
 
 fastapi_users = FastAPIUsers[User, uuid.UUID](
