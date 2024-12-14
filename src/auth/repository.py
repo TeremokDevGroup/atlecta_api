@@ -51,3 +51,16 @@ class UserProfileRepository(SQLAlchemyRepository):
             res = await session.execute(stmt)
             await session.commit()
             return res
+
+    async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType]:
+        async with self._session_factory as session:
+            stmt = (select(self.model)
+                    .join(User, self.model.user_id == User.id)
+                    .filter(User.is_active == True)
+                    .filter_by(**filters)
+                    .order_by(order)
+                    .limit(limit)
+                    .offset(offset)
+                    )
+            row = await session.execute(stmt)
+            return row.scalars().all()

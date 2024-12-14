@@ -19,11 +19,13 @@ users_router = APIRouter(
 )
 
 
-@auth_router.get("/authenticated-route")
-async def authenticated_route(user: User = Depends(current_active_user)):
-    return user
+@users_router.get("/profiles/me/")
+async def get_current_active_user_profile(user: User = Depends(current_active_user)):
+    user_profile = await UserProfileSQLAlchemyService().get_by_id(user.id)
+    return user_profile
 
 
+# NOTE:Get all active user profiles
 @users_router.get("/profiles/")
 async def get_all_users_profiles() -> list[UserProfile]:
     user_profiles = await UserProfileSQLAlchemyService().get_all()
