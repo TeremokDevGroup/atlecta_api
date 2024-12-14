@@ -1,11 +1,12 @@
 from __future__ import annotations
+from datetime import datetime
+from uuid import UUID
 
-from sqlalchemy import Column, Numeric, String, ForeignKey, Table, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, ForeignKey, Numeric, String, Table, DateTime
+from sqlalchemy.sql import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database import Base, metadata, get_async_session
+from src.database import Base
 
 # Base = declarative_base()
 # metadata = Base.metadata
@@ -15,6 +16,14 @@ sport_objects_tags = Table(
     'sport_objects_tags',
     Base.metadata,
     Column('sport_id', ForeignKey('sport.id'), primary_key=True),
+    Column('sport_object_id', ForeignKey('sport_object.id'), primary_key=True),
+)
+
+sport_objects_images = Table(
+    'sport_objects_images',
+    Base.metadata,
+    Column('sport_object_image_id', ForeignKey(
+        'sport_object_image.id'), primary_key=True),
     Column('sport_object_id', ForeignKey('sport_object.id'), primary_key=True),
 )
 
@@ -37,9 +46,22 @@ class SportObject(Base):
     x_coord: Mapped[float] = mapped_column(Numeric(17, 15), nullable=False)
     y_coord: Mapped[float] = mapped_column(Numeric(18, 15), nullable=False)
     address: Mapped[str] = mapped_column(String(255), nullable=True)
+    # TODO: created_at: Mapped[datetime]
+
+    images: Mapped[list[SportObjectImage]] = relationship(
+        secondary=sport_objects_images, lazy="selectin")
 
     tags: Mapped[list[Sport]] = relationship(
         secondary=sport_objects_tags, lazy="selectin")
 
     def __str__(self) -> str:
         return f"{self.x_coord}, {self.y_coord}, {self.address}, {[str(tag) for tag in self.tags]}"
+
+
+class SportObjectImage(Base):
+    __tablename__ = "sport_object_image"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    url: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now())

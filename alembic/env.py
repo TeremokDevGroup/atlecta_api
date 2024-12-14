@@ -1,17 +1,16 @@
-from src.sports.models import metadata as sports_metadata
-from src.auth.models import metadata as auth_metadata
-from src import database
 import asyncio
+import os
+import sys
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import src.auth.models
+import src.sports.models
 from alembic import context
-
-import os
-import sys
+from src import database
 
 sys.path.append(os.path.join(sys.path[0], 'src'))
 
@@ -29,7 +28,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = (sports_metadata, auth_metadata)
+target_metadata = database.Base.metadata
 
 SQLALCHEMY_DATABASE_URL = database.SQLALCHEMY_DATABASE_URL + "?async_fallback=True"
 config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
