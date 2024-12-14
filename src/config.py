@@ -15,6 +15,8 @@ if DEV_MODE != "true":
     DB_NAME = os.environ.get("DB_NAME")
     DB_USER = os.environ.get("DB_USER")
     DB_PASSWORD = os.environ.get("DB_PASSWORD")
+    REDIS_HOST = os.environ.get("REDIS_HOST")
+    REDIS_PORT = os.environ.get("REDIS_PORT")
 
 else:
 
@@ -23,6 +25,8 @@ else:
     DB_NAME = os.environ.get("DB_DEV_NAME")
     DB_USER = os.environ.get("DB_DEV_USER")
     DB_PASSWORD = os.environ.get("DB_DEV_PASSWORD")
+    REDIS_HOST = os.environ.get("REDIS_DEV_HOST")
+    REDIS_PORT = os.environ.get("REDIS_DEV_PORT")
 
 DB_HOST_TEST = os.environ.get("DB_HOST_TEST")
 DB_PORT_TEST = os.environ.get("DB_PORT_TEST")
