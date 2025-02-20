@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from src.auth.models import UserProfile
 from src.database import async_session_maker
 from src.auth.repository import UserProfileRepository
-from src.sports.models import Sport, SportObject
-from src.sports.repository import SportObjectRepository, SportRepository
+from src.sports.models import Sport, SportObject, SportObjectImage
+from src.sports.repository import SportObjectRepository, SportRepository, SportObjectImageRepository
 
 
 class AbstractUnitOfWork(ABC):
@@ -36,10 +36,14 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
     async def __aenter__(self, *args, **kwargs):
         self.session = self.session_factory()
+
         self.sports = SportRepository(
             db_session=self.session, model=Sport)
         self.sport_objects = SportObjectRepository(
             db_session=self.session, model=SportObject)
+        self.sport_object_images = SportObjectImageRepository(
+            db_session=self.session, model=SportObjectImage)
+
         self.user_profiles = UserProfileRepository(
             db_session=self.session, model=UserProfile)
 

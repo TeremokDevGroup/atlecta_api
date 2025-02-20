@@ -1,6 +1,6 @@
 import time
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, File, Request, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from src.auth.auth import auth_backend
 from src.auth.schemas import UserCreate, UserRead
@@ -8,6 +8,8 @@ from src.auth.schemas import UserCreate, UserRead
 from src.sports.router import sports_router
 from src.auth.router import auth_router, users_router
 from src.auth.auth import fastapi_users
+
+from .s3_service import S3BucketService, s3_bucket_service_factory
 
 app = FastAPI(
     title="Atlecta API",
@@ -25,6 +27,40 @@ app.add_middleware(
 @app.get("/about")
 async def about():
     return {"message": "Hello, world!"}
+
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        s3_service = s3_bucket_service_factory()
+
+        content = await file.read()
+        await s3_service.upload_file_object(
+            prefix="test",
+            source_file_name=file.filename,
+            content=content,
+            content_type=file.content_type
+        )
+        file_url = f"http://localhost:9000/test/uploads/{file.filename}"
+        return {"url": file_url, "message": "Upload successful"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"File upload failed: {str(e)}")
+
+
+@app.delete("/delete/{file_name}/")
+async def delete_file(file_name: str):
+    try:
+        s3_service = s3_bucket_service_factory()
+        await s3_service.delete_file_object(
+            prefix="test",
+            source_file_name=file_name
+        )
+        return {"message": "Deleted!"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"File deletetion failed: {str(e)}")
+
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),

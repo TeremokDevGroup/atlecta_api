@@ -22,7 +22,36 @@ services:
     networks:
       - private
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/postgres_data
+
+  minio:
+    image: minio/minio:latest
+    command: server --console-address ":9001" /data/
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: atlecta_user # WARNING: WTF IS THIS
+      MINIO_ROOT_PASSWORD: atlecta_password # WARNING: WTF IS THIS
+    volumes:
+      - minio-storage:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"] # Enable AOF persistence
+    restart: always
+    networks:
+      - private
 
   atlecta_api:
     image: atlecta_api:latest
@@ -31,6 +60,8 @@ services:
     #   - 8080:8080
     depends_on:
       - postgres
+      - minio
+      - redis
     env_file:
       - .env
     environment:
@@ -59,6 +90,8 @@ services:
 
 volumes:
   postgres_data:
+  minio-storage:
+  redis-data:
 
 configs:
   nginx_config:

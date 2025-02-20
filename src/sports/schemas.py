@@ -1,3 +1,5 @@
+from datetime import datetime
+import uuid
 from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional
 from src.sports.models import Sport as SportModel
@@ -45,3 +47,18 @@ class SportObjectCreate(SportObjectBase):
 
 class SportObject(SportObjectBase):
     id: int
+
+
+class SportObjectImageBase(BaseModel):
+    url: str
+
+
+class SportObjectImageCreate(SportObjectImageBase):
+    pass
+
+
+class SportObjectImage(SportObjectImageBase):
+    id: uuid.UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repository import ModelType, SQLAlchemyRepository
-from src.sports.models import Sport, SportObject
+from src.sports.models import Sport, SportObject, SportObjectImage
 from src.sports.schemas import SportObjectCreate
 from src.utils import parse_pydantic_schema
 
@@ -12,6 +12,23 @@ from src.utils import parse_pydantic_schema
 class SportRepository(SQLAlchemyRepository):
     def __init__(self, db_session: AsyncSession, model: Type[ModelType] = Sport) -> None:
         super().__init__(model, db_session)
+
+
+class SportObjectImageRepository(SQLAlchemyRepository):
+    def __init__(self, db_session: AsyncSession, model: Type[ModelType] = SportObjectImage) -> None:
+        super().__init__(model, db_session)
+
+    async def get_all_by_object_id(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType] | None:
+        async with self._session_factory as session:
+            stmt = select(SportObject).filter_by(**filters)
+
+            result = await session.execute(stmt)
+            sport_object = result.scalars().first()
+
+            if sport_object:
+                return sport_object.images
+            else:
+                return None
 
 
 class SportObjectRepository(SQLAlchemyRepository):

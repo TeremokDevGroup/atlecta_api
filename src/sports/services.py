@@ -1,5 +1,14 @@
-from src.sports.schemas import Sport, SportCreate, SportObject, SportObjectCreate
+import uuid
+
+from fastapi import HTTPException, UploadFile
+
+from src.s3_service import S3BucketService, s3_bucket_service_factory
 from src.unitofwork import SQLAlchemyUnitOfWork
+from src.sports.schemas import (
+    Sport, SportCreate,
+    SportObject, SportObjectCreate,
+    SportObjectImage, SportObjectImageCreate
+)
 
 
 class SportSQLAlchemyService():
@@ -45,4 +54,103 @@ class SportObjectSQLAlchemyService():
         async with self.uow:
             sport_object = await self.uow.sport_objects.get_single(id=id)
             sport_object = SportObject.model_validate(sport_object)
+            return sport_object
+
+
+class SportObjectImageSQLAlchemyService():
+    ALLOWED_IMAGE_TYPES = {"image/jpeg",
+                           "image/png", "image/webp", "image/svg+xml"}
+
+    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork(), s3_service: S3BucketService = s3_bucket_service_factory()) -> None:
+        self.uow = uow
+        self.s3_service = s3_service
+
+    async def _validate_sport_object(self, sport_object_id: int) -> SportObject:
+        sport_object = await SportObjectSQLAlchemyService().get_by_id(id=sport_object_id)
+
+        if not sport_object:
+            raise HTTPException(
+                status_code=404, detail="SportObject not found")
+
+        return sport_object
+
+    async def _validate_file_type(self, file: UploadFile):
+        if file.content_type not in self.ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type: {file.content_type}. "
+                f"Allowed types: {', '.join(self.ALLOWED_IMAGE_TYPES)}",
+            )
+
+    async def _upload_image_to_s3_bucket(self, sport_object_id: int, file: UploadFile) -> str:
+        await self._validate_file_type(file)
+
+        file_uuid = str(uuid.uuid4())
+        file_extention = file.filename.split(".")[-1]
+        source_file_name = f"{file_uuid}.{file_extention}"
+
+        prefix = f"sports/objects/{sport_object_id}/images"
+
+        content = await file.read()
+
+        await self.s3_service.upload_file_object(
+            prefix=prefix,
+            source_file_name=source_file_name,
+            content=content,
+            content_type=file.content_type or "application/octet-stream"
+        )
+
+        file_url = f"{self.s3_service.bucket_name}/{prefix}/{source_file_name}"
+
+        return file_url
+
+    async def add(self, sport_object_id: int, files: list[UploadFile]) -> list[SportObjectImage]:
+        async with self.uow:
+
+            await self._validate_sport_object(sport_object_id)
+
+            uploaded_images = []
+
+            for file in files:
+                try:
+                    file_url = await self._upload_image_to_s3_bucket(sport_object_id, file)
+
+                    image_create_schema = SportObjectImageCreate.model_construct(
+                        url=file_url)
+
+                    image_model = await self.uow.sport_object_images.create(
+                        image_create_schema)
+
+                    image_schema = SportObjectImage.model_validate(image_model)
+
+                    uploaded_images.append(image_schema)
+
+                except Exception as e:
+                    print(e)
+                    raise HTTPException(
+                        status_code=500, detail=f"Failed to upload {file.filename}: {str(e)}"
+                    )
+
+            return uploaded_images
+
+            # sport_object_image_model = await self.uow.sport_object_images.create(sport_object_image)
+            # sport_object_image_schema = SportObjectImage.model_validate(
+            #     sport_object_image_model)
+            # return sport_object_image_schema
+
+    async def get_all(self, sport_object_id: int) -> list[SportObjectImage] | None:
+        async with self.uow:
+            sport_object_images = await self.uow.sport_object_images.get_all_by_object_id(id=sport_object_id)
+
+            if sport_object_images:
+                sport_object_images = [SportObjectImage.model_validate(
+                    sport_object_image) for sport_object_image in sport_object_images]
+                return sport_object_images
+            else:
+                return None
+
+    async def get_by_id(self, id: int) -> SportObjectImage:
+        async with self.uow:
+            sport_object = await self.uow.sport_objects.get_single(id=id)
+            sport_object = SportObjectImage.model_validate(sport_object)
             return sport_object
