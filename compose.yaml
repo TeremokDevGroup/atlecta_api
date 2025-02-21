@@ -22,7 +22,8 @@ services:
     networks:
       - private
     volumes:
-      - postgres_data:/var/lib/postgresql/postgres_data
+      # - postgres-data:/var/lib/postgresql/postgres-data
+      - postgres-data:/var/lib/postgresql/data
 
   minio:
     image: minio/minio:latest
@@ -89,7 +90,7 @@ services:
       retries: 3
 
 volumes:
-  postgres_data:
+  postgres-data:
   minio-storage:
   redis-data:
 
