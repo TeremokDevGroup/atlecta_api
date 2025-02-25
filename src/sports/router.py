@@ -54,10 +54,6 @@ async def get_sport_object_images(sport_object_id: int) -> list[SportObjectImage
 
 
 @sports_router.post("/sports/objects/{sport_object_id}/images")
-async def add_sport_object_images(
-    sport_object_id: int,
-    files: list[UploadFile] = File(...)
-):
-
+async def add_sport_object_images(sport_object_id: int, files: list[UploadFile] = File(...)) -> list[SportObjectImage]:
     uploaded_images = await SportObjectImageSQLAlchemyService().add(sport_object_id, files)
-    return {"uploaded_images": uploaded_images}
+    return uploaded_images
