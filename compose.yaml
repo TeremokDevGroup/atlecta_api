@@ -82,9 +82,9 @@ services:
       - public
     healthcheck:
       test: ["CMD", "curl", "-f", "http://atlecta_api:8080/healthcheck"]
-      interval: 30s
+      interval: 240s
       timeout: 10s
-      retries: 3
+      retries: 1
 
 volumes:
   postgres-data:

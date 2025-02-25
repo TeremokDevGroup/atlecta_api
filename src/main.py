@@ -13,6 +13,7 @@ from .s3_service import S3BucketService, s3_bucket_service_factory
 
 app = FastAPI(
     title="Atlecta API",
+    swagger_ui_parameters={"displayRequestDuration": True}
 )
 
 app.add_middleware(
@@ -24,9 +25,9 @@ app.add_middleware(
 )
 
 
-@app.get("/about")
-async def about():
-    return {"message": "Hello, world!"}
+@app.get("/healthcheck")
+async def healthcheck():
+    return {"status": "healthy"}
 
 
 @app.post("/upload")
@@ -36,13 +37,36 @@ async def upload_file(file: UploadFile = File(...)):
 
         content = await file.read()
         await s3_service.upload_file_object(
-            prefix="test",
+            prefix="",
             source_file_name=file.filename,
             content=content,
             content_type=file.content_type
         )
-        file_url = f"http://localhost:9000/test/uploads/{file.filename}"
+        file_url = f"{s3_service.endpoint}/{s3_service.bucket_name}/{file.filename}"
         return {"url": file_url, "message": "Upload successful"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"File upload failed: {str(e)}")
+
+
+@app.post("/upload_multiple")
+async def upload_files(files: list[UploadFile]):
+    try:
+        s3_service = s3_bucket_service_factory()
+        file_urls = ''
+
+        for file in files:
+            content = await file.read()
+            await s3_service.upload_file_object(
+                prefix="",
+                source_file_name=file.filename,
+                content=content,
+                content_type=file.content_type
+            )
+            file_urls += f"{s3_service.endpoint}/{s3_service.bucket_name}/{file.filename}"
+
+        return {"url": file_urls, "message": "Uploaded successful"}
+
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"File upload failed: {str(e)}")
@@ -86,6 +110,8 @@ app.include_router(
 app.include_router(
     sports_router
 )
+
+# Middleware
 
 
 @app.middleware("http")
