@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
+import uuid
 
 from sqlalchemy import Column, ForeignKey, Numeric, String, Table, DateTime
 from sqlalchemy.sql import func
@@ -61,7 +62,7 @@ class SportObject(Base):
 class SportObjectImage(Base):
     __tablename__ = "sport_object_image"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     url: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now())
