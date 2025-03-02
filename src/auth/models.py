@@ -12,9 +12,9 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database import Base, metadata, get_async_session
+from src.database import Base, get_async_session
 from src.sports.models import Sport
 
 # Base = declarative_base()
