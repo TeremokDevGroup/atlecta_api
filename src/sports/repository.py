@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repository import ModelType, SQLAlchemyRepository
 from src.sports.models import Sport, SportObject, SportObjectImage
-from src.sports.schemas import SportObjectCreate
+from src.sports.schemas import SportObjectCreateSchema, SportObjectImageCreateSchema
 from src.utils import parse_pydantic_schema
 
 
@@ -17,6 +17,22 @@ class SportRepository(SQLAlchemyRepository):
 class SportObjectImageRepository(SQLAlchemyRepository):
     def __init__(self, db_session: AsyncSession, model: Type[ModelType] = SportObjectImage) -> None:
         super().__init__(model, db_session)
+
+    async def create(self, sport_object_id: int, data: SportObjectImageCreateSchema) -> SportObject:
+        async with self._session_factory as session:
+            stmt = select(SportObject).where(SportObject.id == sport_object_id)
+            res = await session.execute(stmt)
+            sport_object = res.scalar_one()
+
+            parsed_schema = parse_pydantic_schema(data)
+            instance = self.model(**parsed_schema)
+
+            sport_object.images.append(instance)
+            session.add(instance)
+            await session.commit()
+            await session.refresh(instance)
+
+        return instance
 
     async def get_all_by_object_id(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType] | None:
         async with self._session_factory as session:
@@ -36,7 +52,7 @@ class SportObjectRepository(SQLAlchemyRepository):
     def __init__(self, db_session: AsyncSession, model: Type[ModelType] = SportObject) -> None:
         super().__init__(model, db_session)
 
-    async def create(self, data: SportObjectCreate) -> ModelType:
+    async def create(self, data: SportObjectCreateSchema) -> ModelType:
         async with self._session_factory as session:
             parsed_schema = parse_pydantic_schema(data)
             tags = parsed_schema.pop("tags")

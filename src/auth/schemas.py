@@ -3,22 +3,22 @@ import uuid
 from pydantic import BaseModel, ConfigDict, field_validator
 from fastapi_users import schemas
 
-from src.sports.schemas import SportBase
+from src.sports.schemas import SportBaseSchema
 
 
-class UserRead(schemas.BaseUser[uuid.UUID]):
+class UserReadSchema(schemas.BaseUser[uuid.UUID]):
     pass
 
 
-class UserCreate(schemas.BaseUserCreate):
+class UserCreateSchema(schemas.BaseUserCreate):
     pass
 
 
-class UserUpdate(schemas.BaseUserUpdate):
+class UserUpdateSchema(schemas.BaseUserUpdate):
     pass
 
 
-class UserProfileBase(BaseModel):
+class UserProfileBaseSchema(BaseModel):
     first_name: str
     last_name: str
     age: int
@@ -26,25 +26,25 @@ class UserProfileBase(BaseModel):
     weight: int
     gender: int
 
-    sports: list[SportBase]
+    sports: list[SportBaseSchema]
 
     @field_validator("sports")
-    def validate_tags(cls, value: list[SportBase]) -> list[SportBase]:
+    def validate_tags(cls, value: list[SportBaseSchema]) -> list[SportBaseSchema]:
         return list(set(value))
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserProfileCreate(UserProfileBase):
+class UserProfileCreateSchema(UserProfileBaseSchema):
     user_id: uuid.UUID
     bio: str
 
 
-class UserProfileUpdate(UserProfileBase):
+class UserProfileUpdateSchema(UserProfileBaseSchema):
     user_id: uuid.UUID
     bio: str
 
 
-class UserProfile(UserProfileBase):
+class UserProfileSchema(UserProfileBaseSchema):
     user_id: uuid.UUID
     bio: str

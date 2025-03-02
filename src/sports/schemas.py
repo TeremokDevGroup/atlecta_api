@@ -5,7 +5,7 @@ from typing import Optional
 from src.sports.models import Sport as SportModel
 
 
-class SportBase(BaseModel):
+class SportBaseSchema(BaseModel):
     name: str
 
     model_config = ConfigDict(from_attributes=True, frozen=True)
@@ -17,47 +17,47 @@ class SportBase(BaseModel):
         return self.name == other.name
 
 
-class SportCreate(SportBase):
+class SportCreateShema(SportBaseSchema):
     pass
 
 
-class Sport(SportBase):
+class SportSchema(SportBaseSchema):
     id: int
 
 
-class SportObjectBase(BaseModel):
+class SportObjectBaseSchema(BaseModel):
     name: str
     x_coord: float
     y_coord: float
     address: Optional[str] = None
 
     # NOTE: It's actually should be a set() but I get 'is not hashable' error when I call .model_dump()
-    tags: list[SportBase]
+    tags: list[SportBaseSchema]
 
     @field_validator("tags")
-    def validate_tags(cls, value: list[SportBase]) -> list[SportBase]:
+    def validate_tags(cls, value: list[SportBaseSchema]) -> list[SportBaseSchema]:
         return list(set(value))
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class SportObjectCreate(SportObjectBase):
+class SportObjectCreateSchema(SportObjectBaseSchema):
     pass
 
 
-class SportObject(SportObjectBase):
+class SportObjectSchema(SportObjectBaseSchema):
     id: int
 
 
-class SportObjectImageBase(BaseModel):
+class SportObjectImageBaseSchema(BaseModel):
     url: str
 
 
-class SportObjectImageCreate(SportObjectImageBase):
+class SportObjectImageCreateSchema(SportObjectImageBaseSchema):
     pass
 
 
-class SportObjectImage(SportObjectImageBase):
+class SportObjectImageSchema(SportObjectImageBaseSchema):
     id: uuid.UUID
     created_at: datetime
 

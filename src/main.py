@@ -3,7 +3,7 @@ import time
 from fastapi import FastAPI, File, Request, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from src.auth.auth import auth_backend
-from src.auth.schemas import UserCreate, UserRead
+from src.auth.schemas import UserCreateSchema, UserReadSchema
 
 from src.sports.router import sports_router
 from src.auth.router import auth_router, users_router
@@ -92,12 +92,12 @@ app.include_router(
     tags=["auth"],
 )
 app.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
+    fastapi_users.get_register_router(UserReadSchema, UserCreateSchema),
     prefix="/auth",
     tags=["auth"],
 )
 app.include_router(
-    fastapi_users.get_verify_router(UserRead),
+    fastapi_users.get_verify_router(UserReadSchema),
     prefix="/auth/verification",
     tags=["auth"],
 )

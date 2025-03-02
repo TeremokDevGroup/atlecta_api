@@ -4,7 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.models import User, UserProfile
-from src.auth.schemas import UserProfileCreate, UserProfileUpdate
+from src.auth.schemas import UserProfileCreateSchema, UserProfileUpdateSchema
 from src.repository import ModelType, SQLAlchemyRepository
 from src.sports.models import Sport
 from src.utils import parse_pydantic_schema
@@ -19,7 +19,7 @@ class UserProfileRepository(SQLAlchemyRepository):
     def __init__(self, db_session: AsyncSession, model: Type[ModelType] = UserProfile) -> None:
         super().__init__(model, db_session)
 
-    async def create(self, data: UserProfileCreate) -> UserProfile:
+    async def create(self, data: UserProfileCreateSchema) -> UserProfile:
         async with self._session_factory as session:
             parsed_schema = parse_pydantic_schema(data)
             sports = parsed_schema.pop("sports")
@@ -44,7 +44,7 @@ class UserProfileRepository(SQLAlchemyRepository):
 
             return instance
 
-    async def update_single(self, data: UserProfileUpdate, **filters) -> ModelType:
+    async def update_single(self, data: UserProfileUpdateSchema, **filters) -> ModelType:
         async with self._session_factory as session:
             stmt = update(self.model).values(
                 **data).filter_by(**filters).returning(self.model)

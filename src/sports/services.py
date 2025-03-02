@@ -5,9 +5,9 @@ from fastapi import HTTPException, UploadFile
 from src.s3_service import S3BucketService, s3_bucket_service_factory
 from src.unitofwork import SQLAlchemyUnitOfWork
 from src.sports.schemas import (
-    Sport, SportCreate,
-    SportObject, SportObjectCreate,
-    SportObjectImage, SportObjectImageCreate
+    SportSchema, SportCreateShema,
+    SportObjectSchema, SportObjectCreateSchema,
+    SportObjectImageSchema, SportObjectImageCreateSchema
 )
 
 
@@ -15,21 +15,21 @@ class SportSQLAlchemyService():
     def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
         self.uow = uow
 
-    async def add(self, sport: SportCreate):
+    async def add(self, sport: SportCreateShema):
         async with self.uow:
             sport_dict = sport.model_dump()
             sport_id = await self.uow.sports.create(sport_dict)
             return sport_id
 
-    async def get_all(self) -> list[Sport]:
+    async def get_all(self) -> list[SportSchema]:
         async with self.uow:
             sports = await self.uow.sports.get_multi()
             return sports
 
-    async def get_by_id(self, id: int) -> Sport:
+    async def get_by_id(self, id: int) -> SportSchema:
         async with self.uow:
             sport = await self.uow.sports.get_single(id=id)
-            sport = Sport.model_validate(sport)
+            sport = SportSchema.model_validate(sport)
             return sport
 
 
@@ -38,22 +38,22 @@ class SportObjectSQLAlchemyService():
     def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
         self.uow = uow
 
-    async def add(self, sport_object: SportObjectCreate) -> SportObjectCreate:
+    async def add(self, sport_object: SportObjectCreateSchema) -> SportObjectCreateSchema:
         async with self.uow:
             sport_object = await self.uow.sport_objects.create(sport_object)
             return sport_object
 
-    async def get_all(self) -> list[SportObject]:
+    async def get_all(self) -> list[SportObjectSchema]:
         async with self.uow:
             sport_objects = await self.uow.sport_objects.get_multi()
-            sport_objects = [SportObject.model_validate(
+            sport_objects = [SportObjectSchema.model_validate(
                 sport_object) for sport_object in sport_objects]
             return sport_objects
 
-    async def get_by_id(self, id: int) -> SportObject:
+    async def get_by_id(self, id: int) -> SportObjectSchema:
         async with self.uow:
             sport_object = await self.uow.sport_objects.get_single(id=id)
-            sport_object = SportObject.model_validate(sport_object)
+            sport_object = SportObjectSchema.model_validate(sport_object)
             return sport_object
 
 
@@ -65,7 +65,7 @@ class SportObjectImageSQLAlchemyService():
         self.uow = uow
         self.s3_service = s3_service
 
-    async def _validate_sport_object(self, sport_object_id: int) -> SportObject:
+    async def _validate_sport_object(self, sport_object_id: int) -> SportObjectSchema:
         sport_object = await SportObjectSQLAlchemyService().get_by_id(id=sport_object_id)
 
         if not sport_object:
@@ -104,7 +104,7 @@ class SportObjectImageSQLAlchemyService():
 
         return file_url
 
-    async def add(self, sport_object_id: int, files: list[UploadFile]) -> list[SportObjectImage]:
+    async def add(self, sport_object_id: int, files: list[UploadFile]) -> list[SportObjectImageSchema]:
         async with self.uow:
 
             await self._validate_sport_object(sport_object_id)
@@ -115,13 +115,13 @@ class SportObjectImageSQLAlchemyService():
                 try:
                     file_url = await self._upload_image_to_s3_bucket(sport_object_id, file)
 
-                    image_create_schema = SportObjectImageCreate.model_construct(
+                    image_create_schema = SportObjectImageCreateSchema.model_construct(
                         url=file_url)
 
-                    image_model = await self.uow.sport_object_images.create(
-                        image_create_schema)
+                    image_model = await self.uow.sport_object_images.create(sport_object_id, image_create_schema)
 
-                    image_schema = SportObjectImage.model_validate(image_model)
+                    image_schema = SportObjectImageSchema.model_validate(
+                        image_model)
 
                     uploaded_images.append(image_schema)
 
@@ -138,19 +138,19 @@ class SportObjectImageSQLAlchemyService():
             #     sport_object_image_model)
             # return sport_object_image_schema
 
-    async def get_all(self, sport_object_id: int) -> list[SportObjectImage] | None:
+    async def get_all(self, sport_object_id: int) -> list[SportObjectImageSchema] | None:
         async with self.uow:
             sport_object_images = await self.uow.sport_object_images.get_all_by_object_id(id=sport_object_id)
 
             if sport_object_images:
-                sport_object_images = [SportObjectImage.model_validate(
+                sport_object_images = [SportObjectImageSchema.model_validate(
                     sport_object_image) for sport_object_image in sport_object_images]
                 return sport_object_images
             else:
                 return None
 
-    async def get_by_id(self, id: int) -> SportObjectImage:
+    async def get_by_id(self, id: int) -> SportObjectImageSchema:
         async with self.uow:
             sport_object = await self.uow.sport_objects.get_single(id=id)
-            sport_object = SportObjectImage.model_validate(sport_object)
+            sport_object = SportObjectImageSchema.model_validate(sport_object)
             return sport_object
