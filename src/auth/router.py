@@ -20,7 +20,7 @@ users_router = APIRouter(
 
 
 @users_router.get("/profiles/me/")
-async def get_current_active_user_profile(user: User = Depends(current_active_user)):
+async def get_current_active_user_profile(user: User = Depends(current_active_user)) -> UserProfileSchema:
     user_profile = await UserProfileSQLAlchemyService().get_by_id(user.id)
     return user_profile
 
