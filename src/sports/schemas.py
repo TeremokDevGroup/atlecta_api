@@ -17,7 +17,7 @@ class SportBaseSchema(BaseModel):
         return self.name == other.name
 
 
-class SportCreateShema(SportBaseSchema):
+class SportCreateSchema(SportBaseSchema):
     pass
 
 

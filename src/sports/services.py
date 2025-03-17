@@ -5,7 +5,7 @@ from fastapi import HTTPException, UploadFile
 from src.s3_service import S3BucketService, s3_bucket_service_factory
 from src.unitofwork import SQLAlchemyUnitOfWork
 from src.sports.schemas import (
-    SportSchema, SportCreateShema,
+    SportSchema, SportCreateSchema,
     SportObjectSchema, SportObjectCreateSchema,
     SportObjectImageSchema, SportObjectImageCreateSchema
 )
@@ -15,15 +15,18 @@ class SportSQLAlchemyService():
     def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
         self.uow = uow
 
-    async def add(self, sport: SportCreateShema):
+    async def add(self, sport_model: SportCreateSchema) -> SportSchema:
         async with self.uow:
-            sport_dict = sport.model_dump()
-            sport_id = await self.uow.sports.create(sport_dict)
-            return sport_id
+            sport_dict = sport_model.model_dump()
+            sport_model = await self.uow.sports.create(sport_dict)
+            sport = SportSchema.model_validate(sport_model)
+            return sport
 
     async def get_all(self) -> list[SportSchema]:
         async with self.uow:
             sports = await self.uow.sports.get_multi()
+            sports = [SportSchema.model_validate(
+                sport_object) for sport_object in sports]
             return sports
 
     async def get_by_id(self, id: int) -> SportSchema:
@@ -38,10 +41,12 @@ class SportObjectSQLAlchemyService():
     def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
         self.uow = uow
 
-    async def add(self, sport_object: SportObjectCreateSchema) -> SportObjectCreateSchema:
+    async def add(self, sport_object: SportObjectCreateSchema) -> SportObjectSchema:
         async with self.uow:
-            sport_object = await self.uow.sport_objects.create(sport_object)
-            return sport_object
+            sport_object_model = await self.uow.sport_objects.create(sport_object)
+            sport_object_created = SportObjectSchema.model_validate(
+                sport_object)
+            return sport_object_created
 
     async def get_all(self) -> list[SportObjectSchema]:
         async with self.uow:
