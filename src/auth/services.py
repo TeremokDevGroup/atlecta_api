@@ -14,11 +14,11 @@ class UserProfileSQLAlchemyService():
             created_profile = UserProfileSchema.model_validate(user_profile)
             return created_profile
 
-    async def update(self, user_profile: UserProfileUpdateSchema) -> UserProfileUpdateSchema:
+    async def update(self, user_profile: UserProfileUpdateSchema) -> UserProfileSchema:
         async with self.uow:
             user_profile = await self.uow.user_profiles.update(user_profile)
-
-            return user_profile
+            updated_profile = UserProfileSchema.model_validate(user_profile)
+            return updated_profile
 
     async def get_all(self) -> list[UserProfileSchema]:
         async with self.uow:
