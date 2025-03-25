@@ -3,10 +3,10 @@ name = "atlecta-api"
 version = "0.1.0"
 description = ""
 authors = [{ name = "David Lashevich", email = "david.lashevich@gmail.com" }]
-requires-python = ">=3.13.1,<4"
+requires-python = ">=3.13.2,<4"
 readme = "README.md"
 dependencies = [
-  "fastapi[standart]>=0.115.4,<0.116",
+  "fastapi>=0.115.4,<0.116",
   "alembic>=1.13.1,<2",
   "sqlalchemy[asyncio]>=2.0.36,<3",
   "uvicorn>=0.29.0,<0.30",

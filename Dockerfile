@@ -1,15 +1,13 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.13-slim-bookworm
 
-RUN apt update && \
-  apt -y install curl && \
-  pip install poetry
+COPY --from=ghcr.io/astral-sh/uv:0.6.9 /uv /uvx /bin/
 
 WORKDIR /app
 
-COPY poetry.lock .
+COPY uv.lock .
 COPY pyproject.toml .
 
-RUN poetry install
+RUN uv sync --frozen
 
 COPY . .
 

@@ -18,12 +18,12 @@ jobs:
           password: ${{ secrets.DB_PASSWORD_TEST }}
           database: ${{ secrets.DB_NAME_TEST }}
           port: ${{ secrets.DB_PORT_TEST }}
-          postgres-version: "16"
+          postgres-version: "17"
         id: postgres
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.12.2
+          python-version: 3.13.2
 
       - name: cache poetry install
         uses: actions/cache@v2
