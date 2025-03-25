@@ -1,8 +1,10 @@
 services:
   nginx:
-    image: nginx:1.27.2-alpine
+    image: nginx:1.27.4-bookworm
     ports:
-      - 8080:8080
+      - 80:80
+      # - 443:443
+      - 9000:9000
     configs:
       - source: nginx_config
         target: /etc/nginx/nginx.conf
@@ -10,15 +12,14 @@ services:
       - public
     depends_on:
       - atlecta_api
+      - minio
 
   postgres:
-    image: postgres:latest
+    image: postgres:17-bookworm
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-    # ports:
-    #   - 5433:5432
     networks:
       - private
     volumes:
@@ -33,16 +34,16 @@ services:
     image: minio/minio:latest
     command: server --console-address ":9001" /data/
     ports:
-      - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: atlecta_user # WARNING: WTF IS THIS
-      MINIO_ROOT_PASSWORD: atlecta_password # WARNING: WTF IS THIS
+      # MINIO_SERVER_URL: "${HOST_ADDRESS}"
+      # MINIO_BROWSER_REDIRECT_URL: "${HOST_ADDRESS}/minio/ui/"
+      MINIO_ROOT_USER: ${S3_ACCESS}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET}
     volumes:
       - minio-storage:/data
     networks:
-      - private
-      - default
+      - public
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -63,8 +64,6 @@ services:
   atlecta_api:
     image: atlecta_api:latest
     build: .
-    # ports:
-    #   - 8080:8080
     depends_on:
       - postgres
       - minio
@@ -80,11 +79,21 @@ services:
     networks:
       - private
       - public
+      # - default
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://atlecta_api:8080/healthcheck"]
-      interval: 240s
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/healthcheck"]
+      interval: 30s
       timeout: 10s
-      retries: 1
+      retries: 2
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/
+        - action: rebuild
+          path: ./pyproject.toml
 
 volumes:
   postgres-data:
@@ -98,8 +107,9 @@ configs:
 networks:
   public:
   private:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: "10.0.0.0/19"
-          gateway: "10.0.0.1"
+    internal: true
+    # driver: bridge
+    # ipam:
+    #   config:
+    #     - subnet: "10.0.0.0/19"
+    #       gateway: "10.0.0.1"
