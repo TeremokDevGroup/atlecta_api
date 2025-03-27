@@ -1,7 +1,9 @@
 import time
 
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi import FastAPI, File, Request, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import FileResponse
 from src.auth.auth import auth_backend
 from src.auth.schemas import UserCreateSchema, UserReadSchema
 
@@ -13,7 +15,8 @@ from .s3_service import S3BucketService, s3_bucket_service_factory
 
 app = FastAPI(
     title="Atlecta API",
-    swagger_ui_parameters={"displayRequestDuration": True}
+    swagger_ui_parameters={"displayRequestDuration": True},
+    docs_url=None, redoc_url=None
 )
 
 app.add_middleware(
@@ -24,10 +27,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+favicon_url = "favicon-96x96.png"
+
 
 @app.get("/healthcheck")
 async def healthcheck():
     return {"status": "healthy"}
+
+
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return FileResponse(favicon_url)
+
+
+@app.get("/docs", include_in_schema=False)
+def overridden_swagger():
+    return get_swagger_ui_html(openapi_url="/openapi.json", title=app.title + " - Swagger UI", swagger_favicon_url="favicon.ico")
+
+
+@app.get("/redoc", include_in_schema=False)
+def overridden_redoc():
+    return get_redoc_html(openapi_url="/openapi.json", title=app.title + " - ReDoc", redoc_favicon_url="favicon.ico")
 
 
 @app.post("/upload")
