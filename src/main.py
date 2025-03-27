@@ -42,7 +42,7 @@ async def favicon():
 
 @app.get("/docs", include_in_schema=False)
 def overridden_swagger():
-    return get_swagger_ui_html(openapi_url="/openapi.json", title=app.title + " - Swagger UI", swagger_favicon_url="favicon.ico")
+    return get_swagger_ui_html(openapi_url="/openapi.json", title=app.title + " - Swagger UI", swagger_favicon_url="favicon.ico", swagger_ui_parameters={"displayRequestDuration": True})
 
 
 @app.get("/redoc", include_in_schema=False)
