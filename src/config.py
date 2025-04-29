@@ -46,4 +46,13 @@ DB_NAME_TEST = os.environ.get("DB_NAME_TEST")
 DB_USER_TEST = os.environ.get("DB_USER_TEST")
 DB_PASS_TEST = os.environ.get("DB_PASS_TEST")
 
+
 AUTH_SECRET = str(os.environ.get("AUTH_SECRET"))
+
+VK_OAUTH_CLIENT = str(os.environ.get("VK_OAUTH_CLIENT"))
+VK_OAUTH_SECRET = str(os.environ.get("VK_OAUTH_SECRET"))
+VK_AUTHORIZE_ENDPOINT = str(os.environ.get("VK_AUTHORIZE_ENDPOINT"))
+VK_ACCESS_TOKEN_ENDPOINT = str(os.environ.get("VK_ACCESS_TOKEN_ENDPOINT"))
+
+GOOGLE_OAUTH_CLIENT = str(os.environ.get("GOOGLE_OAUTH_CLIENT"))
+GOOGLE_OAUTH_CLIENT_SECRET = str(os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET"))

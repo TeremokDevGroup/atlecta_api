@@ -8,7 +8,7 @@ from fastapi_users.exceptions import UserAlreadyExists
 from src.auth.models import User, get_user_db
 from src.database import get_async_session
 
-SECRET = "SECRET"
+SECRET = "SECRET"  # WARNING: Change this
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -16,6 +16,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     verification_token_secret = SECRET
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
+        # TODO: Create UserProfile
         print(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(

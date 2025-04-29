@@ -1,6 +1,6 @@
 import uuid
-import redis.asyncio
 
+import redis.asyncio
 from fastapi_users import FastAPIUsers
 from fastapi_users.authentication import (
     AuthenticationBackend,
@@ -8,10 +8,22 @@ from fastapi_users.authentication import (
     JWTStrategy,
     RedisStrategy,
 )
+from httpx_oauth.clients.google import GoogleOAuth2
+from httpx_oauth.oauth2 import OAuth2
 
 from src.auth.manager import get_user_manager
 from src.auth.models import User
-from src.config import AUTH_SECRET, REDIS_HOST, REDIS_PORT
+from src.config import (
+    AUTH_SECRET,
+    GOOGLE_OAUTH_CLIENT,
+    GOOGLE_OAUTH_CLIENT_SECRET,
+    REDIS_HOST,
+    REDIS_PORT,
+    VK_ACCESS_TOKEN_ENDPOINT,
+    VK_AUTHORIZE_ENDPOINT,
+    VK_OAUTH_CLIENT,
+    VK_OAUTH_SECRET,
+)
 
 SECRET = AUTH_SECRET
 
@@ -34,7 +46,7 @@ def get_jwt_strategy() -> JWTStrategy:
 auth_backend = AuthenticationBackend(
     name="jwt",
     transport=bearer_transport,
-    get_strategy=get_redis_stretegy,
+    get_strategy=get_jwt_strategy,
 )
 
 fastapi_users = FastAPIUsers[User, uuid.UUID](
@@ -45,3 +57,15 @@ fastapi_users = FastAPIUsers[User, uuid.UUID](
 current_active_user = fastapi_users.current_user(active=True)
 current_superuser = fastapi_users.current_user(
     active=True, superuser=True)
+
+
+vk_oauth_client = OAuth2(
+    VK_OAUTH_CLIENT,
+    VK_OAUTH_SECRET,
+    VK_AUTHORIZE_ENDPOINT,
+    VK_ACCESS_TOKEN_ENDPOINT
+)
+
+
+google_oauth_client = GoogleOAuth2(
+    GOOGLE_OAUTH_CLIENT, GOOGLE_OAUTH_CLIENT_SECRET)

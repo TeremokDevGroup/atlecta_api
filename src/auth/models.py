@@ -1,7 +1,12 @@
 import uuid
 
 from fastapi import Depends
-from fastapi_users.db import SQLAlchemyBaseUserTableUUID, SQLAlchemyUserDatabase
+from fastapi_users.db import (
+    SQLAlchemyBaseOAuthAccountTableUUID,
+    SQLAlchemyBaseUserTableUUID,
+    SQLAlchemyUserDatabase,
+)
+from fastapi_users_db_sqlalchemy.generics import GUID
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -12,7 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from src.database import Base, get_async_session
 from src.sports.models import Sport
@@ -29,11 +34,22 @@ user_profiles_sports = Table(
 )
 
 
+class OAuthAccount(SQLAlchemyBaseOAuthAccountTableUUID, Base):
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID, ForeignKey("user_account.id", ondelete="cascade"), nullable=False
+    )
+
+
 class User(SQLAlchemyBaseUserTableUUID, Base):
     # NOTE: since 'user' is a reserved name in PostgreSQL.
     # Also this way we decompose 'user' to 'user_account' and 'user_profile'
     __tablename__ = "user_account"
-    profile: Mapped["UserProfile"] = relationship(back_populates="user")
+
+    oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
+        "OAuthAccount", lazy="joined")
+
+    profile: Mapped["UserProfile"] = relationship(
+        back_populates="user_account")
     # created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
     # last_edited: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
@@ -45,7 +61,7 @@ class UserProfile(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user_account.id"))
-    user: Mapped[User] = relationship(back_populates="profile")
+    user_account: Mapped[User] = relationship(back_populates="profile")
 
     first_name: Mapped[str] = mapped_column(String(150))
     last_name: Mapped[str] = mapped_column(String(150))
@@ -60,4 +76,4 @@ class UserProfile(Base):
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
-    yield SQLAlchemyUserDatabase(session, User)
+    yield SQLAlchemyUserDatabase(session, User, OAuthAccount)

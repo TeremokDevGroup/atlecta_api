@@ -4,14 +4,14 @@ from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi import FastAPI, File, Request, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
-from src.auth.auth import auth_backend
+from src.auth.auth import auth_backend, google_oauth_client, vk_oauth_client
 from src.auth.schemas import UserCreateSchema, UserReadSchema
 
 from src.sports.router import sports_router
 from src.auth.router import auth_router, users_router
 from src.auth.auth import fastapi_users
 
-from .s3_service import S3BucketService, s3_bucket_service_factory
+from .s3_service import s3_bucket_service_factory
 
 app = FastAPI(
     title="Atlecta API",
@@ -120,6 +120,21 @@ app.include_router(
     fastapi_users.get_verify_router(UserReadSchema),
     prefix="/auth/verification",
     tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_oauth_router(
+        # WARNING: Change SECRET to something strong
+        google_oauth_client, auth_backend, "SECRET",
+        associate_by_email=True),
+    prefix="/auth/google",
+    tags=["auth"]
+)
+app.include_router(
+    fastapi_users.get_oauth_router(
+        # WARNING: Change SECRET to something strong
+        vk_oauth_client, auth_backend, "SECRET", redirect_url="http://localhost/auth/vk/callback"),
+    prefix="/auth/vk",
+    tags=["auth"]
 )
 app.include_router(
     auth_router
