@@ -23,6 +23,7 @@ dependencies = [
   "faker>=36.1.1,<37",
   "fastapi-pagination>=0.12.34,<0.13",
   "sqlakeyset>=2.0.1739066250,<3",
+  "httpx-oauth>=0.16.1",
 ]
 
 [tool.uv]

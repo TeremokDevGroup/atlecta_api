@@ -210,6 +210,7 @@ dependencies = [
     { name = "fastapi-pagination" },
     { name = "fastapi-users-db-sqlalchemy" },
     { name = "httpx" },
+    { name = "httpx-oauth" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "python-dotenv" },
@@ -231,6 +232,7 @@ requires-dist = [
     { name = "fastapi-pagination", specifier = ">=0.12.34,<0.13" },
     { name = "fastapi-users-db-sqlalchemy", specifier = ">=6.0.1,<7" },
     { name = "httpx", specifier = ">=0.27.0,<0.28" },
+    { name = "httpx-oauth", specifier = ">=0.16.1" },
     { name = "pytest", specifier = ">=8.2.1,<9" },
     { name = "pytest-asyncio", specifier = ">=0.23.7,<0.24" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2" },
@@ -570,6 +572,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/78/82/08f8c936781f67d9e6b9eeb8a0c8b4e406136ea4c3d1f89a5db71d42e0e6/httpx-0.27.2.tar.gz", hash = "sha256:f7c2be1d2f3c3c3160d441802406b206c2b76f5947b11115e6df10c6c65e66c2", size = 144189 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/95/9377bcb415797e44274b51d46e3249eba641711cf3348050f76ee7b15ffc/httpx-0.27.2-py3-none-any.whl", hash = "sha256:7bb2708e112d8fdd7829cd4243970f0c223274051cb35ee80c03301ee29a3df0", size = 76395 },
+]
+
+[[package]]
+name = "httpx-oauth"
+version = "0.16.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2f/07/db4ad128da3926be22eec586aa87dafd8840c9eb03fe88505fbed016b5c6/httpx_oauth-0.16.1.tar.gz", hash = "sha256:7402f061f860abc092ea4f5c90acfc576a40bbb79633c1d2920f1ca282c296ee", size = 44148 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/4b/2b81e876abf77b4af3372aff731f4f6722840ebc7dcfd85778eaba271733/httpx_oauth-0.16.1-py3-none-any.whl", hash = "sha256:2fcad82f80f28d0473a0fc4b4eda223dc952050af7e3a8c8781342d850f09fb5", size = 38056 },
 ]
 
 [[package]]
