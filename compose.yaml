@@ -4,7 +4,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 9000:9000
+      # - 9000:9000
     configs:
       - source: nginx_config
         # target: /etc/nginx/nginx.conf
@@ -40,9 +40,10 @@ services:
     command: server --console-address ":9001" /data/
     ports:
       - "9001:9001"
+      - "9000:9000"
     environment:
       # MINIO_SERVER_URL: "${HOST_ADDRESS}"
-      # MINIO_BROWSER_REDIRECT_URL: "${HOST_ADDRESS}/minio/ui/"
+      # MINIO_BROWSER_REDIRECT_URL: "${HOST_ADDRESS}/minio/"
       MINIO_ROOT_USER: ${S3_ACCESS}
       MINIO_ROOT_PASSWORD: ${S3_SECRET}
     volumes:
