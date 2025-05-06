@@ -16,7 +16,7 @@ class UserProfileSQLAlchemyService():
 
     async def update(self, user_profile: UserProfileUpdateSchema) -> UserProfileSchema:
         async with self.uow:
-            user_profile = await self.uow.user_profiles.update(user_profile)
+            user_profile = await self.uow.user_profiles.update_single(user_profile)
             updated_profile = UserProfileSchema.model_validate(user_profile)
             return updated_profile
 

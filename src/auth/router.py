@@ -25,8 +25,15 @@ async def get_current_active_user_profile(user: User = Depends(current_active_us
     return user_profile
 
 
-# NOTE:Get all active user profiles
-@users_router.get("/profiles/")
+@users_router.patch("/profiles/me")
+async def update_user_profile(user_profile: UserProfileUpdateSchema, user: User = Depends(current_active_user)) -> UserProfileSchema:
+    user_profile.user_id = user.id
+    # TODO: Maybe this should be named patch, not update
+    updated_profile = await UserProfileSQLAlchemyService().update(user_profile)
+    return updated_profile
+
+
+@users_router.get("/profiles/")  # NOTE:Get all active user profiles
 async def get_all_users_profiles() -> list[UserProfileSchema]:
     user_profiles = await UserProfileSQLAlchemyService().get_all()
     return user_profiles
@@ -43,10 +50,3 @@ async def create_user_profile(user_profile: UserProfileCreateSchema, user: User 
     user_profile.user_id = user.id
     created_profile = await UserProfileSQLAlchemyService().add(user_profile)
     return created_profile
-
-
-@users_router.put("/profiles")
-async def update_user_profile(user_profile: UserProfileUpdateSchema, user: User = Depends(current_active_user)) -> UserProfileSchema:
-    user_profile.user_id = user.id
-    updated_profile = await UserProfileSQLAlchemyService().update(user_profile)
-    return updated_profile

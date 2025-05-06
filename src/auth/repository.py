@@ -1,10 +1,13 @@
-from typing import Type
+from typing import Any, Type
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.models import User, UserProfile
-from src.auth.schemas import UserProfileCreateSchema, UserProfileUpdateSchema
+from src.auth.schemas import (
+    UserProfileCreateSchema,
+    UserProfileUpdateSchema,
+)
 from src.repository import ModelType, SQLAlchemyRepository
 from src.sports.models import Sport
 from src.utils import parse_pydantic_schema
@@ -44,13 +47,43 @@ class UserProfileRepository(SQLAlchemyRepository):
 
             return instance
 
-    async def update_single(self, data: UserProfileUpdateSchema, **filters) -> ModelType:
+    async def update_single(self, data: UserProfileUpdateSchema, **filters: Any) -> UserProfile:
         async with self._session_factory as session:
-            stmt = update(self.model).values(
-                **data).filter_by(**filters).returning(self.model)
-            res = await session.execute(stmt)
+            parsed_schema = parse_pydantic_schema(data)
+            sports = parsed_schema.pop("sports", None)
+
+            update_data = data.model_dump(
+                exclude_none=True, exclude_unset=True)
+            update_data.pop("sports", None)
+
+            stmt = select(UserProfile).where(
+                UserProfile.user_id == data.user_id)
+            row = await session.execute(stmt)
+            profile = row.scalars().one()
+
+            for key, value in update_data.items():
+                if hasattr(profile, key):
+                    setattr(profile, key, value)
+                else:
+                    # Log a warning if a field from the schema doesn't exist on the model.
+                    # This might indicate a mismatch between schema and model definitions.
+                    print(
+                        f"Warning: Attribute '{key}' from update data not found on UserProfile model.")
+
+            if sports is not None:
+                profile.sports = []
+                for sport in sports:
+                    query = select(Sport).where(Sport.name == sport.name)
+                    db_sport = (await session.execute(query)).scalar_one_or_none()
+
+                    if db_sport is not None:
+                        profile.sports.append(db_sport)
+
+            session.add(profile)
+            await session.flush()
             await session.commit()
-            return res
+
+            return profile
 
     async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType]:
         async with self._session_factory as session:
