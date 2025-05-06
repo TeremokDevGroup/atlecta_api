@@ -48,7 +48,6 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
             db_session=self.session, model=UserProfile)
 
     async def __aexit__(self, *args, **kwargs):
-        await self.rollback()
         await self.session.close()
 
     async def commit(self):
