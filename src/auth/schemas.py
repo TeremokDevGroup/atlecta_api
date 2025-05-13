@@ -19,6 +19,23 @@ class UserUpdateSchema(schemas.BaseUserUpdate):
     pass
 
 
+class UserProfileImageBaseSchema(BaseModel):
+    url: str
+
+
+class UserProfileImageCreateSchema(UserProfileImageBaseSchema):
+    # TODO: Rename this to is_profile_image (and do the same thing for UserProfileImage model)
+    is_profile_picture: bool = False
+
+
+class UserProfileImageSchema(UserProfileImageBaseSchema):
+    id: uuid.UUID
+    is_profile_picture: bool
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserProfileBaseSchema(BaseModel):
     first_name: str = Field(..., min_length=1)
     last_name: str = Field(..., min_length=1)
@@ -43,6 +60,10 @@ class UserProfileCreateSchema(UserProfileBaseSchema):
     @property
     def user_id(self) -> uuid.UUID:
         return self._user_id
+
+    @user_id.setter
+    def user_id(self, user_id: uuid.UUID):
+        self._user_id = user_id
 
 
 # NOTE: Not inherited from UserProfileBaseShcema to make fiels optional
@@ -80,20 +101,4 @@ class UserProfileUpdateSchema(BaseModel):
 class UserProfileSchema(UserProfileBaseSchema):
     user_id: uuid.UUID
     bio: str
-
-
-class UserProfileImageBaseSchema(BaseModel):
-    url: str
-
-
-class UserProfileImageCreateSchema(UserProfileImageBaseSchema):
-    # TODO: Rename this to is_profile_image (and do the same thing for UserProfileImage model)
-    is_profile_picture: bool = False
-
-
-class UserProfileImageSchema(UserProfileImageBaseSchema):
-    id: uuid.UUID
-    is_profile_picture: bool
-    uploaded_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
+    images: list[UserProfileImageSchema]

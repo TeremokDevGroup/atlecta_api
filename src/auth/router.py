@@ -39,7 +39,6 @@ async def get_current_active_user_profile(user: User = Depends(current_active_us
 @users_router.patch("/profiles/me")
 async def update_user_profile(user_profile: Annotated[UserProfileUpdateSchema, Depends(UserProfileUpdateSchema)], user: User = Depends(current_active_user)) -> UserProfileSchema:
     user_profile.user_id = user.id
-    # TODO: Maybe this should be named patch, not update
     updated_profile = await UserProfileSQLAlchemyService().update(user_profile)
     return updated_profile
 

@@ -1,7 +1,6 @@
 import time
-from typing import Literal
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from starlette.responses import FileResponse
@@ -16,7 +15,6 @@ from src.auth.router import auth_router, users_router
 from src.auth.schemas import UserCreateSchema, UserReadSchema
 from src.sports.router import sports_router
 
-from .s3_service import s3_bucket_service_factory
 from .schemas import HealthcheckResponse
 
 app = FastAPI(
