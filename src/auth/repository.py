@@ -1,10 +1,12 @@
+import uuid
 from typing import Any, Type
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.models import User, UserProfile
+from src.auth.models import User, UserProfileImage, UserProfile
 from src.auth.schemas import (
+    UserProfileImageCreateSchema,
     UserProfileCreateSchema,
     UserProfileUpdateSchema,
 )
@@ -97,3 +99,36 @@ class UserProfileRepository(SQLAlchemyRepository):
                     )
             row = await session.execute(stmt)
             return row.scalars().all()
+
+
+class UserProfileImageRepository(SQLAlchemyRepository):
+    def __init__(self, db_session: AsyncSession, model: Type[ModelType] = UserProfileImage) -> None:
+        super().__init__(model, db_session)
+
+    async def create(self, user_id: uuid.UUID, data: UserProfileImageCreateSchema) -> ModelType:
+        async with self._session_factory as session:
+            stmt = select(UserProfile).where(UserProfile.user_id == user_id)
+            res = await session.execute(stmt)
+            user_profile = res.scalar_one()
+
+            parsed_schema = parse_pydantic_schema(data)
+            instance = self.model(**parsed_schema)
+
+            user_profile.images.append(instance)
+            session.add(instance)
+            await session.commit()
+            await session.refresh(instance)
+
+        return instance
+
+    async def get_all_by_user_id(self, order: str = "user_id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType] | None:
+        async with self._session_factory as session:
+            stmt = select(UserProfile).filter_by(**filters)
+
+            result = await session.execute(stmt)
+            user_profile = result.scalars().first()
+
+            if user_profile:
+                return user_profile.images
+            else:
+                return None

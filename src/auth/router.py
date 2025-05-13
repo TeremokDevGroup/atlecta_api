@@ -1,10 +1,21 @@
+from typing import Annotated
 import uuid
-from fastapi import APIRouter, Depends
 
-from src.auth.schemas import UserProfileCreateSchema, UserProfileSchema, UserProfileUpdateSchema
-from src.auth.services import UserProfileSQLAlchemyService
-from .models import User
+from fastapi import APIRouter, Depends, File, UploadFile
+
+from src.auth.schemas import (
+    UserProfileCreateSchema,
+    UserProfileImageSchema,
+    UserProfileSchema,
+    UserProfileUpdateSchema,
+)
+from src.auth.services import (
+    UserProfileImageSQLAlchemyService,
+    UserProfileSQLAlchemyService,
+)
+
 from .auth import current_active_user
+from .models import User, UserProfile
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -26,11 +37,20 @@ async def get_current_active_user_profile(user: User = Depends(current_active_us
 
 
 @users_router.patch("/profiles/me")
-async def update_user_profile(user_profile: UserProfileUpdateSchema, user: User = Depends(current_active_user)) -> UserProfileSchema:
+async def update_user_profile(user_profile: Annotated[UserProfileUpdateSchema, Depends(UserProfileUpdateSchema)], user: User = Depends(current_active_user)) -> UserProfileSchema:
     user_profile.user_id = user.id
     # TODO: Maybe this should be named patch, not update
     updated_profile = await UserProfileSQLAlchemyService().update(user_profile)
     return updated_profile
+
+
+@users_router.post("/profiles/me/profile_image")
+async def add_user_profile_image(
+        file: UploadFile = File(...),
+        user: User = Depends(current_active_user)) -> list[UserProfileImageSchema]:
+
+    uploaded_image = await UserProfileImageSQLAlchemyService().add(user.id, [file])
+    return uploaded_image
 
 
 @users_router.get("/profiles/")  # NOTE:Get all active user profiles
@@ -46,7 +66,13 @@ async def get_user_profile_by_id(user_profile_id: uuid.UUID) -> UserProfileSchem
 
 
 @users_router.post("/profiles")
-async def create_user_profile(user_profile: UserProfileCreateSchema, user: User = Depends(current_active_user)) -> UserProfileSchema:
+async def create_user_profile(user_profile: Annotated[UserProfileCreateSchema, Depends(UserProfileCreateSchema)], user: User = Depends(current_active_user)) -> UserProfileSchema:
     user_profile.user_id = user.id
     created_profile = await UserProfileSQLAlchemyService().add(user_profile)
     return created_profile
+
+
+@users_router.get("/profiles/{user_id}/images/")
+async def get_user_profile_images(user_id: uuid.UUID) -> list[UserProfileImageSchema] | None:
+    user_profile_images = await UserProfileImageSQLAlchemyService().get_all(user_id=user_id)
+    return user_profile_images
