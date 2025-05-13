@@ -4,8 +4,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from geoalchemy2 import Geometry
-from sqlalchemy import Column, DateTime, ForeignKey, String, Table
+from sqlalchemy import Column, DateTime, ForeignKey, Numeric, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -46,14 +45,14 @@ class SportObject(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    # Use PostGIS geometry column (SRID 4326 for WGS84 latitude/longitude)
-    location: Mapped[str] = mapped_column(
-        Geometry('POINT', srid=4326), nullable=True)
+    x_coord: Mapped[float] = mapped_column(Numeric(17, 15), nullable=False)
+    y_coord: Mapped[float] = mapped_column(Numeric(18, 15), nullable=False)
     address: Mapped[str] = mapped_column(String(255), nullable=True)
     # TODO: created_at: Mapped[datetime]
 
     images: Mapped[list[SportObjectImage]] = relationship(
         secondary=sport_objects_images, lazy="selectin")
+
     tags: Mapped[list[Sport]] = relationship(
         secondary=sport_objects_tags, lazy="selectin")
 
