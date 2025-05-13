@@ -65,62 +65,6 @@ def overridden_redoc():
     return get_redoc_html(openapi_url="/openapi.json", title=app.title + " - ReDoc", redoc_favicon_url="favicon.ico")
 
 
-@app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    try:
-        s3_service = s3_bucket_service_factory()
-
-        content = await file.read()
-        await s3_service.upload_file_object(
-            prefix="",
-            source_file_name=file.filename,
-            content=content,
-            content_type=file.content_type
-        )
-        file_url = f"{s3_service.endpoint}/{s3_service.bucket_name}/{file.filename}"
-        return {"url": file_url, "message": "Upload successful"}
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"File upload failed: {str(e)}")
-
-
-@app.post("/upload_multiple")
-async def upload_files(files: list[UploadFile]):
-    try:
-        s3_service = s3_bucket_service_factory()
-        file_urls = ''
-
-        for file in files:
-            content = await file.read()
-            await s3_service.upload_file_object(
-                prefix="",
-                source_file_name=file.filename,
-                content=content,
-                content_type=file.content_type
-            )
-            file_urls += f"{s3_service.endpoint}/{s3_service.bucket_name}/{file.filename}"
-
-        return {"url": file_urls, "message": "Uploaded successful"}
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"File upload failed: {str(e)}")
-
-
-@app.delete("/delete/{file_name}/")
-async def delete_file(file_name: str):
-    try:
-        s3_service = s3_bucket_service_factory()
-        await s3_service.delete_file_object(
-            prefix="test",
-            source_file_name=file_name
-        )
-        return {"message": "Deleted!"}
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"File deletetion failed: {str(e)}")
-
-
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
