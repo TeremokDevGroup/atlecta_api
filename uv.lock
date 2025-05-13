@@ -209,6 +209,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "fastapi-pagination" },
     { name = "fastapi-users-db-sqlalchemy" },
+    { name = "geoalchemy2" },
     { name = "httpx" },
     { name = "httpx-oauth" },
     { name = "pytest" },
@@ -231,6 +232,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.4,<0.116" },
     { name = "fastapi-pagination", specifier = ">=0.12.34,<0.13" },
     { name = "fastapi-users-db-sqlalchemy", specifier = ">=6.0.1,<7" },
+    { name = "geoalchemy2", specifier = ">=0.17.1" },
     { name = "httpx", specifier = ">=0.27.0,<0.28" },
     { name = "httpx-oauth", specifier = ">=0.16.1" },
     { name = "pytest", specifier = ">=8.2.1,<9" },
@@ -510,6 +512,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/42/0595b3dbffc2e82d7fe658c12d5a5bafcd7516c6bf2d1d1feb5387caa9c1/frozenlist-1.5.0-cp313-cp313-win32.whl", hash = "sha256:31a9ac2b38ab9b5a8933b693db4939764ad3f299fcaa931a3e605bc3460e693c", size = 44914 },
     { url = "https://files.pythonhosted.org/packages/17/c4/b7db1206a3fea44bf3b838ca61deb6f74424a8a5db1dd53ecb21da669be6/frozenlist-1.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:11aabdd62b8b9c4b84081a3c246506d1cddd2dd93ff0ad53ede5defec7886b28", size = 51167 },
     { url = "https://files.pythonhosted.org/packages/c6/c8/a5be5b7550c10858fcf9b0ea054baccab474da77d37f1e828ce043a3a5d4/frozenlist-1.5.0-py3-none-any.whl", hash = "sha256:d994863bba198a4a518b467bb971c56e1db3f180a25c6cf7bb1949c267f748c3", size = 11901 },
+]
+
+[[package]]
+name = "geoalchemy2"
+version = "0.17.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/46/52/60214c086a57a7e3ea82241bab94e09827f2b7f7c2084fe6fc280c099b23/geoalchemy2-0.17.1.tar.gz", hash = "sha256:ff5bbe0db5a4ff979f321c8aa1a7556f444ea30cda5146189b1a177ae5bec69d", size = 231566 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f5/82/e83e0f74cba8bbff9c12b2dea4693adb0cf89204012da48433ebd8e8c4d8/GeoAlchemy2-0.17.1-py3-none-any.whl", hash = "sha256:29f41b67d3a52df47821b695d31dec8600747c6ef4de62ee69811bde481dd2ae", size = 77791 },
 ]
 
 [[package]]
