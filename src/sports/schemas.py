@@ -29,7 +29,7 @@ class SportObjectBaseSchema(BaseModel):
     name: str
     x_coord: float
     y_coord: float
-    address: Optional[str] = None
+    address: str | None = None
 
     # NOTE: It's actually should be a set() but I get 'is not hashable' error when I call .model_dump()
     tags: list[SportBaseSchema]
@@ -59,6 +59,6 @@ class SportObjectImageCreateSchema(SportObjectImageBaseSchema):
 
 class SportObjectImageSchema(SportObjectImageBaseSchema):
     id: uuid.UUID
-    created_at: datetime
+    uploaded_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
