@@ -89,9 +89,10 @@ class UserProfileImage(Base):
     """Represents an image associated with a user profile."""
     __tablename__ = "user_profile_image"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
-    user_profile_id: Mapped[int] = mapped_column(
-        ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,  default=uuid.uuid4)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user_profile.user_id", ondelete="CASCADE"), nullable=False
     )
     url: Mapped[str] = mapped_column(
         String(255), nullable=False, comment="URL or path to the stored image file"
@@ -99,6 +100,7 @@ class UserProfileImage(Base):
     # description: Mapped[str | None] = mapped_column(
     #     Text, nullable=True, comment="Optional description or caption for the image"
     # )
+    # TODO: Rename this to is_profile_image (and do the same thing for UserProfileImageSchema)
     is_profile_picture: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False, comment="Is this the main profile picture?"
     )
