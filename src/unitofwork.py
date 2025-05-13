@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from src.auth.models import UserProfile
+from src.auth.models import UserProfile, UserProfileImage
 from src.database import async_session_maker
-from src.auth.repository import UserProfileRepository
+from src.auth.repository import UserProfileImageRepository, UserProfileRepository
 from src.sports.models import Sport, SportObject, SportObjectImage
 from src.sports.repository import SportObjectRepository, SportRepository, SportObjectImageRepository
 
@@ -46,6 +46,8 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
         self.user_profiles = UserProfileRepository(
             db_session=self.session, model=UserProfile)
+        self.user_profile_images = UserProfileImageRepository(
+            db_session=self.session, model=UserProfileImage)
 
     async def __aexit__(self, *args, **kwargs):
         await self.session.close()
