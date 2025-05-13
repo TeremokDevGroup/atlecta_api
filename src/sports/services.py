@@ -45,7 +45,7 @@ class SportObjectSQLAlchemyService():
         async with self.uow:
             sport_object_model = await self.uow.sport_objects.create(sport_object)
             sport_object_created = SportObjectSchema.model_validate(
-                sport_object)
+                sport_object_model)
             return sport_object_created
 
     async def get_all(self) -> list[SportObjectSchema]:
