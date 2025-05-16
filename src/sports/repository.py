@@ -3,8 +3,9 @@ from typing import Type
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from geoalchemy2.functions import ST_Distance, ST_SetSRID, ST_MakePoint
 from src.repository import ModelType, SQLAlchemyRepository
-from src.sports.models import Sport, SportObject, SportObjectImage
+from src.sports.models import Sport, SportObject, SportObjectImage, sport_objects_tags
 from src.sports.schemas import SportObjectCreateSchema, SportObjectImageCreateSchema
 from src.utils import parse_pydantic_schema
 
@@ -82,3 +83,40 @@ class SportObjectRepository(SQLAlchemyRepository):
                 order).limit(limit).offset(offset)
             row = await session.execute(stmt)
             return row.scalars().all()
+
+    async def find_nearest(
+        self,
+        y_coord: float,
+        x_coord: float,
+        limit: int = 10,
+        max_distance_meters: float | None = None,
+        **filters
+    ) -> list[SportObject]:
+        async with self._session_factory as session:
+            user_point = ST_SetSRID(ST_MakePoint(x_coord, y_coord), 4326)
+            query = select(
+                self.model,
+                ST_Distance(self.model.location,
+                            user_point).label("distance")
+            ).join(
+                sport_objects_tags, self.model.id == sport_objects_tags.c.sport_object_id, isouter=True
+            ).join(
+                Sport, sport_objects_tags.c.sport_id == Sport.id, isouter=True
+            )
+
+            if filters:
+                query = query.filter_by(**filters)
+            if max_distance_meters is not None:
+                query = query.where(ST_Distance(
+                    self.model.location, user_point) <= max_distance_meters)
+
+            query = query.order_by("distance").limit(limit)
+            result = await session.execute(query)
+
+            nearest_objects = []
+
+            for i in result.all():
+                nearest_objects.append(i[0])
+                print(str(i[0]), i[1])
+
+            return nearest_objects

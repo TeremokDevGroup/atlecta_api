@@ -61,6 +61,13 @@ class SportObjectSQLAlchemyService():
             sport_object = SportObjectSchema.model_validate(sport_object)
             return sport_object
 
+    async def find_nearest(self, x_coord: float, y_coord: float, limit: int = 10, max_distance_meters: float = 1000, **filters) -> list[SportObjectSchema]:
+        async with self.uow:
+            nearest_sport_objects = await self.uow.sport_objects.find_nearest(x_coord, y_coord, limit, max_distance_meters, **filters)
+            nearest_sport_objects = [SportObjectSchema.model_validate(
+                sport_object) for sport_object in nearest_sport_objects]
+            return nearest_sport_objects
+
 
 class SportObjectImageSQLAlchemyService():
     ALLOWED_IMAGE_TYPES = {"image/jpeg",

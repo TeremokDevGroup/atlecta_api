@@ -128,3 +128,9 @@ async def add_sport_object_images(sport_object_id: int, files: list[UploadFile] 
     """
     uploaded_images = await SportObjectImageSQLAlchemyService().add(sport_object_id, files)
     return uploaded_images
+
+
+@sports_router.post("/sports/test-router")
+async def find_nearest_sport_objects(y_coord: float, x_coord: float, distance: float = 1000) -> list[SportObjectSchema]:
+    nearest_sport_objects = await SportObjectSQLAlchemyService().find_nearest(y_coord, x_coord, max_distance_meters=distance)
+    return nearest_sport_objects
