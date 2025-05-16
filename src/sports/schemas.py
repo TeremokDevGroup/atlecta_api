@@ -1,6 +1,6 @@
 from datetime import datetime
 import uuid
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import Optional
 from src.sports.models import Sport as SportModel
 
@@ -27,8 +27,8 @@ class SportSchema(SportBaseSchema):
 
 class SportObjectBaseSchema(BaseModel):
     name: str
-    x_coord: float
     y_coord: float
+    x_coord: float
     address: str | None = None
 
     # NOTE: It's actually should be a set() but I get 'is not hashable' error when I call .model_dump()
@@ -42,7 +42,13 @@ class SportObjectBaseSchema(BaseModel):
 
 
 class SportObjectCreateSchema(SportObjectBaseSchema):
-    pass
+    # TODO: Remove this from OpenAPI schema
+    location: str = Field(default="", exclude=False)
+
+    @model_validator(mode="after")
+    def populate_location(self) -> "SportObjectCreateSchema":
+        self.location = f"POINT({self.x_coord} {self.y_coord})"
+        return self
 
 
 class SportObjectSchema(SportObjectBaseSchema):
