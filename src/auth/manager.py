@@ -3,10 +3,8 @@ from typing import Optional
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, UUIDIDMixin
-from fastapi_users.exceptions import UserAlreadyExists
 
 from src.auth.models import User, get_user_db
-from src.database import get_async_session
 
 SECRET = "SECRET"  # WARNING: Change this
 
