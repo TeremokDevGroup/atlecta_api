@@ -55,11 +55,11 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 class SQLAlchemyRepository(AbstractRepository, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def __init__(self, model: Type[ModelType], db_session: AsyncSession) -> None:
-        self._session_factory = db_session
+        self.db_session = db_session
         self.model = model
 
     async def create(self, data: CreateSchemaType) -> ModelType:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             parsed_schema = parse_pydantic_schema(data)
             instance = self.model(**parsed_schema)
             session.add(instance)
@@ -68,7 +68,7 @@ class SQLAlchemyRepository(AbstractRepository, Generic[ModelType, CreateSchemaTy
             return instance
 
     async def update(self, data: UpdateSchemaType, **filters) -> ModelType:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             stmt = update(self.model).values(
                 **data).filter_by(**filters).returning(self.model)
             res = await session.execute(stmt)
@@ -76,17 +76,17 @@ class SQLAlchemyRepository(AbstractRepository, Generic[ModelType, CreateSchemaTy
             return res
 
     async def delete(self, **filters) -> None:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             await session.execute(delete(self.model).filter_by(**filters))
             await session.commit()
 
     async def get_single(self, **filters) -> Optional[ModelType] | None:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             row = await session.execute(select(self.model).filter_by(**filters))
             return row.scalar_one_or_none()
 
     async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType]:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             stmt = select(self.model).filter_by(**filters).order_by(
                 order).limit(limit).offset(offset)
             row = await session.execute(stmt)

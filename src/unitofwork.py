@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 
+
 from src.auth.models import UserProfile, UserProfileImage
-from src.database import async_session_maker
+from src.database import async_session_factory
 from src.auth.repository import UserProfileImageRepository, UserProfileRepository
 from src.sports.models import Sport, SportObject, SportObjectImage
 from src.sports.repository import SportObjectRepository, SportRepository, SportObjectImageRepository
@@ -17,7 +18,7 @@ class AbstractUnitOfWork(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def __aexit__(self):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         raise NotImplementedError
 
     @abstractmethod
@@ -31,10 +32,10 @@ class AbstractUnitOfWork(ABC):
 
 class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
-    def __init__(self, session_factory=async_session_maker) -> None:
+    def __init__(self, session_factory=async_session_factory) -> None:
         self.session_factory = session_factory
 
-    async def __aenter__(self, *args, **kwargs):
+    async def __aenter__(self):
         self.session = self.session_factory()
 
         self.sports = SportRepository(
@@ -49,7 +50,11 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
         self.user_profile_images = UserProfileImageRepository(
             db_session=self.session, model=UserProfileImage)
 
-    async def __aexit__(self, *args, **kwargs):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            await self.session.rollback()
         await self.session.close()
 
     async def commit(self):
@@ -57,3 +62,7 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
     async def rollback(self):
         await self.session.rollback()
+
+
+def unit_of_work_factory(session_factory=async_session_factory):
+    return SQLAlchemyUnitOfWork(session_factory=session_factory)

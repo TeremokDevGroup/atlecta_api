@@ -25,7 +25,7 @@ class UserProfileRepository(SQLAlchemyRepository):
         super().__init__(model, db_session)
 
     async def create(self, data: UserProfileCreateSchema) -> UserProfile:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             parsed_schema = parse_pydantic_schema(data)
             sports = parsed_schema.pop("sports")
             instance = self.model(**parsed_schema)
@@ -50,7 +50,7 @@ class UserProfileRepository(SQLAlchemyRepository):
             return instance
 
     async def update_single(self, data: UserProfileUpdateSchema, **filters: Any) -> UserProfile:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             parsed_schema = parse_pydantic_schema(data)
             sports = parsed_schema.pop("sports", None)
 
@@ -88,7 +88,7 @@ class UserProfileRepository(SQLAlchemyRepository):
             return profile
 
     async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType]:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             stmt = (select(self.model)
                     .join(User, self.model.user_id == User.id)
                     .filter(User.is_active == True)
@@ -106,7 +106,7 @@ class UserProfileImageRepository(SQLAlchemyRepository):
         super().__init__(model, db_session)
 
     async def create(self, user_id: uuid.UUID, data: UserProfileImageCreateSchema) -> ModelType:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             stmt = select(UserProfile).where(UserProfile.user_id == user_id)
             res = await session.execute(stmt)
             user_profile = res.scalar_one()
@@ -122,7 +122,7 @@ class UserProfileImageRepository(SQLAlchemyRepository):
         return instance
 
     async def get_all_by_user_id(self, order: str = "user_id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType] | None:
-        async with self._session_factory as session:
+        async with self.db_session as session:
             stmt = select(UserProfile).filter_by(**filters)
 
             result = await session.execute(stmt)

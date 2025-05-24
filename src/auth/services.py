@@ -1,3 +1,4 @@
+from typing import Callable
 import uuid
 
 from fastapi import HTTPException, UploadFile
@@ -8,31 +9,31 @@ from src.unitofwork import SQLAlchemyUnitOfWork
 
 class UserProfileSQLAlchemyService():
 
-    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
-        self.uow = uow
+    def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork) -> None:
+        self._uow_factory = uow_factory
 
     async def add(self, user_profile: UserProfileCreateSchema) -> UserProfileSchema:
-        async with self.uow:
-            user_profile = await self.uow.user_profiles.create(user_profile)
+        async with self._uow_factory() as uow:
+            user_profile = await uow.user_profiles.create(user_profile)
             created_profile = UserProfileSchema.model_validate(user_profile)
             return created_profile
 
     async def update(self, user_profile: UserProfileUpdateSchema) -> UserProfileSchema:
-        async with self.uow:
-            user_profile = await self.uow.user_profiles.update_single(user_profile)
+        async with self._uow_factory() as uow:
+            user_profile = await uow.user_profiles.update_single(user_profile)
             updated_profile = UserProfileSchema.model_validate(user_profile)
             return updated_profile
 
     async def get_all(self) -> list[UserProfileSchema]:
-        async with self.uow:
-            user_profiles = await self.uow.user_profiles.get_multi()
+        async with self._uow_factory() as uow:
+            user_profiles = await uow.user_profiles.get_multi()
             user_profiles = [UserProfileSchema.model_validate(
                 user_profile) for user_profile in user_profiles]
             return user_profiles
 
     async def get_by_id(self, id: uuid.UUID) -> UserProfileSchema:
-        async with self.uow:
-            user_profiles = await self.uow.user_profiles.get_single(user_id=id)
+        async with self._uow_factory() as uow:
+            user_profiles = await uow.user_profiles.get_single(user_id=id)
             user_profiles = UserProfileSchema.model_validate(user_profiles)
             return user_profiles
 
@@ -41,8 +42,8 @@ class UserProfileImageSQLAlchemyService():
     ALLOWED_IMAGE_TYPES = {"image/jpeg",
                            "image/png", "image/webp", "image/svg+xml"}
 
-    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork(), s3_service: S3BucketService = s3_bucket_service_factory()) -> None:
-        self.uow = uow
+    def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork, s3_service: S3BucketService = s3_bucket_service_factory()) -> None:
+        self._uow_factory = uow_factory
         self.s3_service = s3_service
 
     async def _validate_user_profile(self, user_id: uuid.UUID) -> UserProfileSchema:
@@ -85,7 +86,7 @@ class UserProfileImageSQLAlchemyService():
         return file_url
 
     async def add(self, user_id: uuid.UUID, files: list[UploadFile]) -> list[UserProfileImageSchema]:
-        async with self.uow:
+        async with self._uow_factory() as uow:
 
             await self._validate_user_profile(user_id)
 
@@ -98,7 +99,7 @@ class UserProfileImageSQLAlchemyService():
                     image_create_schema = UserProfileImageCreateSchema.model_construct(
                         url=file_url, is_profile_picture=True)
 
-                    image_model = await self.uow.user_profile_images.create(user_id, image_create_schema)
+                    image_model = await uow.user_profile_images.create(user_id, image_create_schema)
 
                     image_schema = UserProfileImageSchema.model_validate(
                         image_model)
@@ -114,8 +115,8 @@ class UserProfileImageSQLAlchemyService():
             return uploaded_images
 
     async def get_all(self, user_id: uuid.UUID) -> list[UserProfileImageSchema] | None:
-        async with self.uow:
-            user_profile_images = await self.uow.user_profile_images.get_all_by_user_id(user_id=user_id)
+        async with self._uow_factory() as uow:
+            user_profile_images = await uow.user_profile_images.get_all_by_user_id(user_id=user_id)
 
             if user_profile_images:
                 user_profile_images = [UserProfileImageSchema.model_validate(
@@ -125,7 +126,7 @@ class UserProfileImageSQLAlchemyService():
                 return None
 
     async def get_by_id(self, id: int) -> UserProfileImageSchema:
-        async with self.uow:
-            sport_object = await self.uow.sport_objects.get_single(id=id)
+        async with self._uow_factory() as uow:
+            sport_object = await uow.sport_objects.get_single(id=id)
             sport_object = UserProfileImageSchema.model_validate(sport_object)
             return sport_object

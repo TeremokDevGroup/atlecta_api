@@ -1,3 +1,4 @@
+from typing import Callable
 import uuid
 
 from fastapi import HTTPException, UploadFile
@@ -12,58 +13,57 @@ from src.sports.schemas import (
 
 
 class SportSQLAlchemyService():
-    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
-        self.uow = uow
+    def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork) -> None:
+        self._uow_factory = uow_factory
 
     async def add(self, sport_model: SportCreateSchema) -> SportSchema:
-        async with self.uow:
+        async with self._uow_factory() as uow:
             sport_dict = sport_model.model_dump()
-            sport_model = await self.uow.sports.create(sport_dict)
+            sport_model = await uow.sports.create(sport_dict)
             sport = SportSchema.model_validate(sport_model)
             return sport
 
     async def get_all(self) -> list[SportSchema]:
-        async with self.uow:
-            sports = await self.uow.sports.get_multi()
+        async with self._uow_factory() as uow:
+            sports = await uow.sports.get_multi()
             sports = [SportSchema.model_validate(
                 sport_object) for sport_object in sports]
             return sports
 
     async def get_by_id(self, id: int) -> SportSchema:
-        async with self.uow:
-            sport = await self.uow.sports.get_single(id=id)
+        async with self._uow_factory() as uow:
+            sport = await uow.sports.get_single(id=id)
             sport = SportSchema.model_validate(sport)
             return sport
 
 
 class SportObjectSQLAlchemyService():
-    # TODO: Here (and in class above) I need to put uow factory
-    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
-        self.uow = uow
+    def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork) -> None:
+        self._uow_factory = uow_factory
 
     async def add(self, sport_object: SportObjectCreateSchema) -> SportObjectSchema:
-        async with self.uow:
-            sport_object_model = await self.uow.sport_objects.create(sport_object)
+        async with self._uow_factory() as uow:
+            sport_object_model = await uow.sport_objects.create(sport_object)
             sport_object_created = SportObjectSchema.model_validate(
                 sport_object_model)
             return sport_object_created
 
     async def get_all(self) -> list[SportObjectSchema]:
-        async with self.uow:
-            sport_objects = await self.uow.sport_objects.get_multi()
+        async with self._uow_factory() as uow:
+            sport_objects = await uow.sport_objects.get_multi()
             sport_objects = [SportObjectSchema.model_validate(
                 sport_object) for sport_object in sport_objects]
             return sport_objects
 
     async def get_by_id(self, id: int) -> SportObjectSchema:
-        async with self.uow:
-            sport_object = await self.uow.sport_objects.get_single(id=id)
+        async with self._uow_factory() as uow:
+            sport_object = await uow.sport_objects.get_single(id=id)
             sport_object = SportObjectSchema.model_validate(sport_object)
             return sport_object
 
     async def find_nearest(self, x_coord: float, y_coord: float, limit: int = 10, max_distance_meters: float = 1000, **filters) -> list[SportObjectSchema]:
-        async with self.uow:
-            nearest_sport_objects = await self.uow.sport_objects.find_nearest(x_coord, y_coord, limit, max_distance_meters, **filters)
+        async with self._uow_factory() as uow:
+            nearest_sport_objects = await uow.sport_objects.find_nearest(x_coord, y_coord, limit, max_distance_meters, **filters)
             nearest_sport_objects = [SportObjectSchema.model_validate(
                 sport_object) for sport_object in nearest_sport_objects]
             return nearest_sport_objects
@@ -73,8 +73,8 @@ class SportObjectImageSQLAlchemyService():
     ALLOWED_IMAGE_TYPES = {"image/jpeg",
                            "image/png", "image/webp", "image/svg+xml"}
 
-    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork(), s3_service: S3BucketService = s3_bucket_service_factory()) -> None:
-        self.uow = uow
+    def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork, s3_service: S3BucketService = s3_bucket_service_factory()) -> None:
+        self._uow_factory = uow_factory
         self.s3_service = s3_service
 
     async def _validate_sport_object(self, sport_object_id: int) -> SportObjectSchema:
@@ -117,7 +117,7 @@ class SportObjectImageSQLAlchemyService():
         return file_url
 
     async def add(self, sport_object_id: int, files: list[UploadFile]) -> list[SportObjectImageSchema]:
-        async with self.uow:
+        async with self._uow_factory() as uow:
 
             await self._validate_sport_object(sport_object_id)
 
@@ -130,7 +130,7 @@ class SportObjectImageSQLAlchemyService():
                     image_create_schema = SportObjectImageCreateSchema.model_construct(
                         url=file_url)
 
-                    image_model = await self.uow.sport_object_images.create(sport_object_id, image_create_schema)
+                    image_model = await uow.sport_object_images.create(sport_object_id, image_create_schema)
 
                     image_schema = SportObjectImageSchema.model_validate(
                         image_model)
@@ -151,8 +151,8 @@ class SportObjectImageSQLAlchemyService():
             # return sport_object_image_schema
 
     async def get_all(self, sport_object_id: int) -> list[SportObjectImageSchema] | None:
-        async with self.uow:
-            sport_object_images = await self.uow.sport_object_images.get_all_by_object_id(id=sport_object_id)
+        async with self._uow_factory() as uow:
+            sport_object_images = await uow.sport_object_images.get_all_by_object_id(id=sport_object_id)
 
             if sport_object_images:
                 sport_object_images = [SportObjectImageSchema.model_validate(
@@ -162,7 +162,12 @@ class SportObjectImageSQLAlchemyService():
                 return None
 
     async def get_by_id(self, id: int) -> SportObjectImageSchema:
-        async with self.uow:
-            sport_object = await self.uow.sport_objects.get_single(id=id)
+        async with self._uow_factory() as uow:
+            sport_object = await uow.sport_objects.get_single(id=id)
             sport_object = SportObjectImageSchema.model_validate(sport_object)
             return sport_object
+
+
+class SomeTestSQLAlchemyService():
+    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
+        self.uow = uow
