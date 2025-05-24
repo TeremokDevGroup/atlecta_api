@@ -66,7 +66,7 @@ class SportObject(Base):
         secondary=sport_objects_tags, lazy="selectin")
 
     def __str__(self) -> str:
-        return f"{self.x_coord}, {self.y_coord}, {self.name}, {self.address}, {[str(tag) for tag in self.tags]}"
+        return f"{self.id}, {self.x_coord}, {self.y_coord}, {self.name}, {self.address}, {[str(tag) for tag in self.tags]}"
 
 
 class SportObjectImage(Base):
