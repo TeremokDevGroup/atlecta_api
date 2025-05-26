@@ -1,9 +1,9 @@
 from typing import Type
 
+from geoalchemy2.functions import ST_Distance, ST_MakePoint, ST_SetSRID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from geoalchemy2.functions import ST_Distance, ST_SetSRID, ST_MakePoint
 from src.repository import ModelType, SQLAlchemyRepository
 from src.sports.models import Sport, SportObject, SportObjectImage
 from src.sports.schemas import SportObjectCreateSchema, SportObjectImageCreateSchema
@@ -13,6 +13,13 @@ from src.utils import parse_pydantic_schema
 class SportRepository(SQLAlchemyRepository):
     def __init__(self, db_session: AsyncSession, model: Type[ModelType] = Sport) -> None:
         super().__init__(model, db_session)
+
+    async def get_or_create_sport(self, name: str) -> Sport:
+        sport = await self.db_session.scalar(select(Sport).filter_by(name=name))
+        if sport is None:
+            sport = Sport(name=name)
+            self.db_session.add(sport)
+        return sport
 
 
 class SportObjectImageRepository(SQLAlchemyRepository):
