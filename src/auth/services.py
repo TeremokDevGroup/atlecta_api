@@ -1,9 +1,23 @@
-from typing import Callable
 import uuid
+from typing import Callable
 
 from fastapi import HTTPException, UploadFile
+from fastapi_users.exceptions import UserAlreadyExists
+
+from src.auth.manager import (
+    get_async_session_context,
+    get_user_db_context,
+    get_user_manager_context,
+)
+from src.auth.schemas import (
+    UserCreateSchema,
+    UserProfileCreateSchema,
+    UserProfileImageCreateSchema,
+    UserProfileImageSchema,
+    UserProfileSchema,
+    UserProfileUpdateSchema,
+)
 from src.s3_service import S3BucketService, s3_bucket_service_factory
-from src.auth.schemas import UserProfileImageCreateSchema, UserProfileSchema, UserProfileCreateSchema, UserProfileUpdateSchema, UserProfileImageSchema
 from src.unitofwork import SQLAlchemyUnitOfWork
 
 
@@ -130,3 +144,20 @@ class UserProfileImageSQLAlchemyService():
             sport_object = await uow.sport_objects.get_single(id=id)
             sport_object = UserProfileImageSchema.model_validate(sport_object)
             return sport_object
+
+
+async def create_user(email: str, password: str, is_superuser: bool = False):
+    try:
+        async with get_async_session_context() as session:
+            async with get_user_db_context(session) as user_db:
+                async with get_user_manager_context(user_db) as user_manager:
+                    user = await user_manager.create(
+                        UserCreateSchema(
+                            email=email, password=password, is_superuser=is_superuser
+                        ))
+                    print(f"User created {user}")
+                    return user
+
+    except UserAlreadyExists:
+        print(f"User {email} already exists")
+        raise
