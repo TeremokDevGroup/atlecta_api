@@ -14,8 +14,8 @@ metadata = Base.metadata
 
 # engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True, future=True)
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, future=True,
-                             pool_size=90,  # Maximum number of persistent connections
-                             max_overflow=5,  # Maximum number of connections to create beyond pool_size
+                             pool_size=10,  # Maximum number of persistent connections
+                             max_overflow=10,  # Maximum number of connections to create beyond pool_size
                              pool_recycle=3600,  # Recycle connections after this many seconds
                              pool_timeout=30,  # Seconds to wait for a connection before timing out
                              # pool_pre_ping=True,  # Test connection before using it
