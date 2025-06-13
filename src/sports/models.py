@@ -6,7 +6,7 @@ from uuid import UUID
 
 from geoalchemy2 import Geography
 from geoalchemy2.types import Geometry
-from sqlalchemy import Column, DateTime, ForeignKey, Numeric, String, Table
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -32,6 +32,30 @@ sport_objects_images = Table(
 )
 
 
+class SportObjectInventory(Base):
+    __tablename__ = 'sport_object_inventory'
+
+    inventory_id: Mapped[int] = mapped_column(
+        ForeignKey('inventory.id'), primary_key=True)
+    sport_object_id: Mapped[int] = mapped_column(
+        ForeignKey('sport_object.id'), primary_key=True)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    inventory: Mapped['Inventory'] = relationship(
+        'Inventory', back_populates='sport_objects', lazy='selectin')
+    sport_object: Mapped['SportObject'] = relationship(
+        'SportObject', back_populates='inventory', lazy='selectin')
+
+
+class Inventory(Base):
+    __tablename__ = 'inventory'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    sport_objects: Mapped[list['SportObjectInventory']] = relationship(
+        'SportObjectInventory', back_populates='inventory')
+
+
 class Sport(Base):
     __tablename__ = "sport"
 
@@ -45,6 +69,7 @@ class Sport(Base):
 class SportObject(Base):
     __tablename__ = "sport_object"
 
+    # TODO: Change this to UUID (I'll have to do some migrations afterwards)
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     y_coord: Mapped[float] = mapped_column(
@@ -64,6 +89,9 @@ class SportObject(Base):
 
     tags: Mapped[list[Sport]] = relationship(
         secondary=sport_objects_tags, lazy="selectin")
+
+    inventory: Mapped[list['SportObjectInventory']] = relationship(
+        'SportObjectInventory', back_populates='sport_object', lazy="selectin")
 
     def __str__(self) -> str:
         return f"{self.id}, {self.x_coord}, {self.y_coord}, {self.name}, {self.address}, {[str(tag) for tag in self.tags]}"

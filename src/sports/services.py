@@ -2,14 +2,42 @@ from typing import Callable
 import uuid
 
 from fastapi import HTTPException, UploadFile
+from fastapi_filter.contrib.sqlalchemy import Filter
 
 from src.s3_service import S3BucketService, s3_bucket_service_factory
+from src.sports.filters import SportObjectFilter
 from src.unitofwork import SQLAlchemyUnitOfWork
 from src.sports.schemas import (
-    SportSchema, SportCreateSchema,
+    InventoryBaseSchema, InventoryCreateSchema, InventorySchema, SportObjectUpdateSchema, SportSchema, SportCreateSchema,
     SportObjectSchema, SportObjectCreateSchema,
     SportObjectImageSchema, SportObjectImageCreateSchema
 )
+
+
+class InventorySQLAlchemyService():
+    def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork) -> None:
+        self._uow_factory = uow_factory
+
+    async def add(self, inventory: InventoryCreateSchema) -> InventorySchema:
+        async with self._uow_factory() as uow:
+            inventory_data = inventory.model_dump()
+            inventory_created = await uow.inventory.create(inventory_data)
+            inventory_created = InventorySchema.model_validate(
+                inventory_created)
+            return inventory_created
+
+    async def get_all(self) -> list[InventorySchema]:
+        async with self._uow_factory() as uow:
+            inventories = await uow.inventory.get_multi()
+            inventories = [InventorySchema.model_validate(
+                inventory) for inventory in inventories]
+            return inventories
+
+    async def get_by_id(self, id: int) -> InventorySchema:
+        async with self._uow_factory() as uow:
+            inventory = await uow.inventory.get_single(id=id)
+            inventory = InventorySchema.model_validate(inventory)
+            return inventory
 
 
 class SportSQLAlchemyService():
@@ -55,18 +83,33 @@ class SportObjectSQLAlchemyService():
                 sport_object) for sport_object in sport_objects]
             return sport_objects
 
+    async def get_multi(self, filter: Filter) -> list[SportObjectSchema]:
+        async with self._uow_factory() as uow:
+            sport_objects = await uow.sport_objects.get_multi(filter=filter)
+            sport_objects = [SportObjectSchema.model_validate(
+                sport_object) for sport_object in sport_objects]
+            return sport_objects
+
     async def get_by_id(self, id: int) -> SportObjectSchema:
         async with self._uow_factory() as uow:
             sport_object = await uow.sport_objects.get_single(id=id)
             sport_object = SportObjectSchema.model_validate(sport_object)
             return sport_object
 
-    async def find_nearest(self, x_coord: float, y_coord: float, limit: int = 10, max_distance_meters: float = 1000, **filters) -> list[SportObjectSchema]:
+    async def find_nearest(self, x_coord: float, y_coord: float, limit: int = 10, max_distance_meters: float = 1000, filter: Filter = SportObjectFilter(), **filters) -> list[SportObjectSchema]:
         async with self._uow_factory() as uow:
             nearest_sport_objects = await uow.sport_objects.find_nearest(x_coord, y_coord, limit, max_distance_meters, **filters)
             nearest_sport_objects = [SportObjectSchema.model_validate(
                 sport_object) for sport_object in nearest_sport_objects]
             return nearest_sport_objects
+
+    async def update_sport_object(self, sport_object: SportObjectUpdateSchema) -> SportObjectSchema:
+        async with self._uow_factory() as uow:
+            updated_sport_object = await uow.sport_objects.update_single(data=sport_object)
+            updated_sport_object = SportObjectSchema.model_validate(
+                updated_sport_object)
+
+            return updated_sport_object
 
 
 class SportObjectImageSQLAlchemyService():
@@ -166,8 +209,3 @@ class SportObjectImageSQLAlchemyService():
             sport_object = await uow.sport_objects.get_single(id=id)
             sport_object = SportObjectImageSchema.model_validate(sport_object)
             return sport_object
-
-
-class SomeTestSQLAlchemyService():
-    def __init__(self, uow: SQLAlchemyUnitOfWork = SQLAlchemyUnitOfWork()) -> None:
-        self.uow = uow

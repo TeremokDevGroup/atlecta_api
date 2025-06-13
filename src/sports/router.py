@@ -1,16 +1,22 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi_filter.base.filter import FilterDepends
 
+from src.sports.filters import SportObjectFilter
 from src.sports.schemas import (
+    InventoryCreateSchema,
+    InventorySchema,
     SportCreateSchema,
     SportObjectCreateSchema,
     SportObjectImageSchema,
     SportObjectSchema,
+    SportObjectUpdateSchema,
     SportSchema,
 )
 
 from .services import (
+    InventorySQLAlchemyService,
     SportObjectImageSQLAlchemyService,
     SportObjectSQLAlchemyService,
     SportSQLAlchemyService,
@@ -23,46 +29,31 @@ sports_router = APIRouter(
 )
 
 
-@sports_router.get("/")
-async def get_all_sports() -> list[SportSchema]:
-    """Retrieve a list of all sports.
+@sports_router.get("/inventory")
+async def get_inventories() -> list[InventorySchema]:
+    inventories = await InventorySQLAlchemyService().get_all()
+    return inventories
+
+
+@sports_router.post("/inventory")
+async def add_inventory(inventory: Annotated[InventoryCreateSchema, Depends(InventoryCreateSchema)]) -> InventorySchema:
+    inventory_created = await InventorySQLAlchemyService().add(inventory)
+    return inventory_created
+
+
+@sports_router.get("/objects")
+async def get_sport_objects(sport_object_filter: SportObjectFilter = FilterDepends(SportObjectFilter)) -> list[SportObjectSchema]:
+    """Retrieve a list of all sport objects.
 
     Returns:
-        list[SportSchema]: A list of all sports in the database.
+        list[SportObjectSchema]: A list of all sport objects in the database.
     """
-    sports = await SportSQLAlchemyService().get_all()
-    return sports
+    sport_objects = await SportObjectSQLAlchemyService().get_multi(filter=sport_object_filter)
+    return sport_objects
 
 
-@sports_router.get("/{sport_id}")
-async def get_sport_by_id(sport_id: int) -> SportSchema:
-    """Retrieve a specific sport by its ID.
-
-    Args:
-        sport_id (int): The ID of the sport to retrieve.
-
-    Returns:
-        SportSchema: The sport with the specified ID.
-    """
-    sport = await SportSQLAlchemyService().get_by_id(id=sport_id)
-    return sport
-
-
-@sports_router.post("/")
-async def add_sport(sport: Annotated[SportCreateSchema, Depends(SportCreateSchema)]) -> SportSchema:
-    """Add a new sport to the database.
-
-    Args:
-        sport (SportCreateSchema): The sport data to be added.
-
-    Returns:
-        SportSchema: The created sport.
-    """
-    sport_created = await SportSQLAlchemyService().add(sport)
-    return sport_created
-
-
-@sports_router.get("/objects/")
+# NOTE: Probably redundant
+@sports_router.get("/objects/all")
 async def get_all_sport_objects() -> list[SportObjectSchema]:
     """Retrieve a list of all sport objects.
 
@@ -73,7 +64,7 @@ async def get_all_sport_objects() -> list[SportObjectSchema]:
     return sport_objects
 
 
-@sports_router.get("/objects/{sport_object_id}/")
+@sports_router.get("/objects/{sport_object_id}")
 async def get_sport_object_by_id(sport_object_id: int) -> SportObjectSchema:
     """Retrieve a specific sport object by its ID.
 
@@ -101,7 +92,21 @@ async def add_sport_object(sport_object: Annotated[SportObjectCreateSchema, Depe
     return sport_object_created
 
 
-@sports_router.get("/objects/{sport_object_id}/images/")
+@sports_router.patch("/objects/{sport_object_id}")
+async def update_sport_object(sport_object: Annotated[SportObjectUpdateSchema, Depends(SportObjectUpdateSchema)]) -> SportObjectSchema:
+    """Add a new sport object to the database.
+
+    Args:
+        sport_object (SportOjbectUpdateSchema): The fields of sport object to be updated.
+
+    Returns:
+        SportObjectSchema: The created sport object.
+    """
+    sport_object_created = await SportObjectSQLAlchemyService().update_sport_object(sport_object)
+    return sport_object_created
+
+
+@sports_router.get("/objects/{sport_object_id}/images")
 async def get_sport_object_images(sport_object_id: int) -> list[SportObjectImageSchema] | None:
     """Retrieve all images associated with a specific sport object.
 
@@ -115,7 +120,7 @@ async def get_sport_object_images(sport_object_id: int) -> list[SportObjectImage
     return sport_object_images
 
 
-@sports_router.post("/sports/objects/{sport_object_id}/images")
+@sports_router.post("/objects/{sport_object_id}/images")
 async def add_sport_object_images(sport_object_id: int, files: list[UploadFile] = File(...)) -> list[SportObjectImageSchema]:
     """Add images to a specific sport object.
 
@@ -130,7 +135,60 @@ async def add_sport_object_images(sport_object_id: int, files: list[UploadFile] 
     return uploaded_images
 
 
-@sports_router.post("/sports/test-router")
+@sports_router.get("/objects/nearby")
 async def find_nearest_sport_objects(y_coord: float, x_coord: float, distance: float = 1000) -> list[SportObjectSchema]:
+    """
+    Find and return a list of sport objects located within a specified distance from given coordinates.
+
+    Args:
+        y_coord (float): Latitude of the search point (in degrees).
+        x_coord (float): Longitude of the search point (in degrees).
+        distance (float, optional): Maximum distance in meters to search for sport objects. Defaults to 1000.
+
+    Returns:
+        list[SportObjectSchema]: A list of sport objects matching the search criteria, containing details like name, address, and coordinates.
+
+    Note:
+        The search uses the Haversine formula to calculate distances. The result is sorted by proximity to the specified point.
+    """
     nearest_sport_objects = await SportObjectSQLAlchemyService().find_nearest(y_coord, x_coord, max_distance_meters=distance)
     return nearest_sport_objects
+
+
+@sports_router.get("")
+async def get_all_sports() -> list[SportSchema]:
+    """Retrieve a list of all sports.
+
+    Returns:
+        list[SportSchema]: A list of all sports in the database.
+    """
+    sports = await SportSQLAlchemyService().get_all()
+    return sports
+
+
+@sports_router.get("/{sport_id}")
+async def get_sport_by_id(sport_id: int) -> SportSchema:
+    """Retrieve a specific sport by its ID.
+
+    Args:
+        sport_id (int): The ID of the sport to retrieve.
+
+    Returns:
+        SportSchema: The sport with the specified ID.
+    """
+    sport = await SportSQLAlchemyService().get_by_id(id=sport_id)
+    return sport
+
+
+@sports_router.post("")
+async def add_sport(sport: Annotated[SportCreateSchema, Depends(SportCreateSchema)]) -> SportSchema:
+    """Add a new sport to the database.
+
+    Args:
+        sport (SportCreateSchema): The sport data to be added.
+
+    Returns:
+        SportSchema: The created sport.
+    """
+    sport_created = await SportSQLAlchemyService().add(sport)
+    return sport_created
