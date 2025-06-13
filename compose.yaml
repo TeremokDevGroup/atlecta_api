@@ -4,7 +4,6 @@ services:
     ports:
       - 80:80
       - 443:443
-      # - 9000:9000
     configs:
       - source: nginx_config
         # target: /etc/nginx/nginx.conf
@@ -101,6 +100,19 @@ services:
         - action: rebuild
           path: ./pyproject.toml
 
+  atlecta_frontend:
+    build:
+      context: ../atlecta_frontend_2.0/atlecta_frontend/
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "5173:5173" # Expose frontend on port 5173
+    depends_on:
+      - atlecta_api
+    networks:
+      - public
+
 volumes:
   postgres-data:
   minio-storage:
@@ -110,14 +122,8 @@ volumes:
 configs:
   nginx_config:
     file: ${NGINX_CONF_PATH}
-    # file: nginx.conf
 
 networks:
   public:
   private:
     internal: true
-    # driver: bridge
-    # ipam:
-    #   config:
-    #     - subnet: "10.0.0.0/19"
-    #       gateway: "10.0.0.1"
