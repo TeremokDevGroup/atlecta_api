@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 import src.auth.models
 import src.sports.models
+import src.chat.models
 from alembic import context
 from src import database
 
