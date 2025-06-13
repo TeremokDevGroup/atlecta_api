@@ -1,11 +1,23 @@
 from abc import ABC, abstractmethod
 
-
 from src.auth.models import UserProfile, UserProfileImage
-from src.database import async_session_factory
 from src.auth.repository import UserProfileImageRepository, UserProfileRepository
-from src.sports.models import Sport, SportObject, SportObjectImage
-from src.sports.repository import SportObjectRepository, SportRepository, SportObjectImageRepository
+from src.chat.models import Attachment, Chat, ChatMember, Group, Message
+from src.chat.repository import (
+    AttachmentRepository,
+    ChatMemberRepository,
+    ChatRepository,
+    GroupRepository,
+    MessageRepository,
+)
+from src.database import async_session_factory
+from src.sports.models import Inventory, Sport, SportObject, SportObjectImage
+from src.sports.repository import (
+    InventoryRepository,
+    SportObjectImageRepository,
+    SportObjectRepository,
+    SportRepository,
+)
 
 
 class AbstractUnitOfWork(ABC):
@@ -38,6 +50,8 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
     async def __aenter__(self):
         self.session = self.session_factory()
 
+        self.inventory = InventoryRepository(
+            db_session=self.session, model=Inventory)
         self.sports = SportRepository(
             db_session=self.session, model=Sport)
         self.sport_objects = SportObjectRepository(
@@ -50,10 +64,22 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
         self.user_profile_images = UserProfileImageRepository(
             db_session=self.session, model=UserProfileImage)
 
+        self.chats = ChatRepository(
+            db_session=self.session, model=Chat)
+        self.groups = GroupRepository(
+            db_session=self.session, model=Group)
+        self.chat_members = ChatMemberRepository(
+            db_session=self.session, model=ChatMember)
+        self.messages = MessageRepository(
+            db_session=self.session, model=Message)
+        self.attachmets = AttachmentRepository(
+            db_session=self.session, model=Attachment)
+
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
+            # TODO: log the exception here
             await self.session.rollback()
         await self.session.close()
 
