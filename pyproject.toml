@@ -25,6 +25,9 @@ dependencies = [
   "sqlakeyset>=2.0.1739066250,<3",
   "httpx-oauth>=0.16.1",
   "geoalchemy2>=0.17.1",
+  "gunicorn>=23.0.0",
+  "websockets>=15.0.1",
+  "fastapi-filter>=2.0.1",
 ]
 
 [tool.uv]
