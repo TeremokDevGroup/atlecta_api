@@ -10,27 +10,38 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils import parse_pydantic_schema
 
 
-class AbstractRepository(ABC):
+ModelType = TypeVar("ModelType", bound=Base)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+
+
+class AbstractRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+    """Abstract base class for repository interface."""
 
     @abstractmethod
-    async def create(self, **kwargs):
-        raise NotImplementedError
+    async def create(self, data: CreateSchemaType) -> ModelType:
+        """Create a new instance in the database."""
+        pass
 
     @abstractmethod
-    async def update(self, **kwargs):
-        raise NotImplementedError
+    async def update(self, data: UpdateSchemaType, **filters) -> ModelType:
+        """Update an instance in the database based on filters."""
+        pass
 
     @abstractmethod
-    async def delete(self, **kwargs):
-        raise NotImplementedError
+    async def delete(self, **filters) -> None:
+        """Delete instances from the database based on filters."""
+        pass
 
     @abstractmethod
-    async def get_single(self, **kwargs):
-        raise NotImplementedError
+    async def get_single(self, **filters) -> Optional[ModelType]:
+        """Retrieve a single instance from the database based on filters."""
+        pass
 
     @abstractmethod
-    async def get_multi(self, **kwargs):
-        raise NotImplementedError
+    async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType]:
+        """Retrieve multiple instances from the database with pagination and ordering."""
+        pass
 
 
 class FakeRepository(AbstractRepository):
@@ -45,11 +56,6 @@ class FakeRepository(AbstractRepository):
 
     def list(self):
         return list(self._objects)
-
-
-ModelType = TypeVar("ModelType", bound=Base)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class SQLAlchemyRepository(AbstractRepository, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
