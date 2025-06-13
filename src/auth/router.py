@@ -1,8 +1,10 @@
-from typing import Annotated
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi_filter.base.filter import FilterDepends
 
+from src.auth.filters import UserProfileFilter
 from src.auth.schemas import (
     UserProfileCreateSchema,
     UserProfileImageSchema,
@@ -15,7 +17,7 @@ from src.auth.services import (
 )
 
 from .auth import current_active_user
-from .models import User, UserProfile
+from .models import User
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -30,7 +32,7 @@ users_router = APIRouter(
 )
 
 
-@users_router.get("/profiles/me/")
+@users_router.get("/profiles/me")
 async def get_current_active_user_profile(user: User = Depends(current_active_user)) -> UserProfileSchema:
     user_profile = await UserProfileSQLAlchemyService().get_by_id(user.id)
     return user_profile
@@ -52,7 +54,13 @@ async def add_user_profile_image(
     return uploaded_image
 
 
-@users_router.get("/profiles/")  # NOTE:Get all active user profiles
+@users_router.get("/profiles")
+async def get_users_profiles(user_profile_filter: UserProfileFilter = FilterDepends(UserProfileFilter)) -> list[UserProfileSchema]:
+    user_profiles = await UserProfileSQLAlchemyService().get_multi(filter=user_profile_filter)
+    return user_profiles
+
+
+@users_router.get("/profiles/all")  # NOTE:Get all active user profiles
 async def get_all_users_profiles() -> list[UserProfileSchema]:
     user_profiles = await UserProfileSQLAlchemyService().get_all()
     return user_profiles
@@ -71,7 +79,7 @@ async def create_user_profile(user_profile: Annotated[UserProfileCreateSchema, D
     return created_profile
 
 
-@users_router.get("/profiles/{user_id}/images/")
+@users_router.get("/profiles/{user_id}/images")
 async def get_user_profile_images(user_id: uuid.UUID) -> list[UserProfileImageSchema] | None:
     user_profile_images = await UserProfileImageSQLAlchemyService().get_all(user_id=user_id)
     return user_profile_images

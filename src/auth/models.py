@@ -20,7 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from src.database import Base, get_async_session
@@ -69,6 +69,7 @@ class UserProfile(Base):
 
     first_name: Mapped[str] = mapped_column(String(150))
     last_name: Mapped[str] = mapped_column(String(150))
+    # birthday: Mapped[date] = mapped_column(Date) correct way to store age
     age: Mapped[int] = mapped_column()
     gender: Mapped[int] = mapped_column(SmallInteger())
     height: Mapped[int] = mapped_column()
@@ -111,6 +112,8 @@ class UserProfileImage(Base):
     user_profile: Mapped["UserProfile"] = relationship(
         back_populates="images"
     )
+
+# This probably should be in dependencies.py
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):

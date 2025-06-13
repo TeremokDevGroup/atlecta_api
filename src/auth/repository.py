@@ -1,13 +1,14 @@
 import uuid
 from typing import Any, Type
 
+from fastapi_filter.contrib.sqlalchemy import Filter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.models import User, UserProfileImage, UserProfile
+from src.auth.models import User, UserProfile, UserProfileImage
 from src.auth.schemas import (
-    UserProfileImageCreateSchema,
     UserProfileCreateSchema,
+    UserProfileImageCreateSchema,
     UserProfileUpdateSchema,
 )
 from src.repository import ModelType, SQLAlchemyRepository
@@ -46,6 +47,7 @@ class UserProfileRepository(SQLAlchemyRepository):
             session.add(instance)
             await session.flush()
             await session.commit()
+            await session.refresh(instance)
 
             return instance
 
@@ -87,18 +89,37 @@ class UserProfileRepository(SQLAlchemyRepository):
 
             return profile
 
-    async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0, **filters) -> list[ModelType]:
+    async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0, filter: Filter | None = None, **filters) -> list[ModelType]:
         async with self.db_session as session:
-            stmt = (select(self.model)
-                    .join(User, self.model.user_id == User.id)
-                    .filter(User.is_active == True)
-                    .filter_by(**filters)
-                    .order_by(order)
-                    .limit(limit)
-                    .offset(offset)
-                    )
-            row = await session.execute(stmt)
-            return row.scalars().all()
+            # stmt = (select(self.model)
+            #         .join(User, self.model.user_id == User.id)
+            #         .filter(User.is_active == True)
+            #         .order_by(order)
+            #         .limit(limit)
+            #         .offset(offset)
+            # )
+
+            stmt = (
+                select(self.model)
+                .join(User, self.model.user_id == User.id)
+                .filter(User.is_active == True)
+                .outerjoin(UserProfile.sports)
+                .outerjoin(UserProfile.images)
+                .limit(limit)
+                .offset(offset)
+            )
+
+            if filter:
+                stmt = filter.filter(stmt)
+                stmt = filter.sort(stmt)
+                print(stmt)
+
+            try:
+                result = await session.execute(stmt)
+                return result.unique().scalars().all()
+            except Exception as e:
+                # Log the error if needed (e.g., using logging module)
+                raise Exception(f"Database query failed: {str(e)}")
 
 
 class UserProfileImageRepository(SQLAlchemyRepository):

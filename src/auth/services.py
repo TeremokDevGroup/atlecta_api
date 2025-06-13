@@ -2,8 +2,10 @@ import uuid
 from typing import Callable
 
 from fastapi import HTTPException, UploadFile
+from fastapi_filter.contrib.sqlalchemy import Filter
 from fastapi_users.exceptions import UserAlreadyExists
 
+from src.auth.filters import UserProfileFilter
 from src.auth.manager import (
     get_async_session_context,
     get_user_db_context,
@@ -21,7 +23,7 @@ from src.s3_service import S3BucketService, s3_bucket_service_factory
 from src.unitofwork import SQLAlchemyUnitOfWork
 
 
-class UserProfileSQLAlchemyService():
+class UserProfileSQLAlchemyService:
 
     def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork) -> None:
         self._uow_factory = uow_factory
@@ -41,6 +43,13 @@ class UserProfileSQLAlchemyService():
     async def get_all(self) -> list[UserProfileSchema]:
         async with self._uow_factory() as uow:
             user_profiles = await uow.user_profiles.get_multi()
+            user_profiles = [UserProfileSchema.model_validate(
+                user_profile) for user_profile in user_profiles]
+            return user_profiles
+
+    async def get_multi(self, filter: Filter) -> list[UserProfileSchema]:
+        async with self._uow_factory() as uow:
+            user_profiles = await uow.user_profiles.get_multi(filter=filter)
             user_profiles = [UserProfileSchema.model_validate(
                 user_profile) for user_profile in user_profiles]
             return user_profiles

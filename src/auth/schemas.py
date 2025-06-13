@@ -54,16 +54,8 @@ class UserProfileBaseSchema(BaseModel):
 
 
 class UserProfileCreateSchema(UserProfileBaseSchema):
-    _user_id: uuid.UUID
-    bio: str | None
-
-    @property
-    def user_id(self) -> uuid.UUID:
-        return self._user_id
-
-    @user_id.setter
-    def user_id(self, user_id: uuid.UUID):
-        self._user_id = user_id
+    user_id: uuid.UUID | None = None
+    bio: str | None = None
 
 
 # NOTE: Not inherited from UserProfileBaseShcema to make fiels optional
