@@ -45,11 +45,11 @@ class SportObjectImageRepository(SQLAlchemyRepository):
     def __init__(self, db_session: AsyncSession, model: Type[ModelType] = SportObjectImage) -> None:
         super().__init__(model, db_session)
 
-    async def create(self, data: SportObjectImageCreateSchema) -> SportObject:
+    async def create(self, sport_object_id: int, data: SportObjectImageCreateSchema) -> SportObject:
         async with self.db_session as session:
             # WARNING: Handle error if there is no such sport object in database
             stmt = select(SportObject).where(
-                SportObject.id == data.sport_object_id)
+                SportObject.id == sport_object_id)
             res = await session.execute(stmt)
             sport_object = res.scalar_one()
 
