@@ -66,7 +66,7 @@ class SportObjectBaseSchema(BaseModel):
 
     # NOTE: It's actually should be a set() but I get 'is not hashable' error when I call .model_dump()
     tags: list[SportBaseSchema]
-    inventory: list[SportObjectInventoryBaseSchema]
+    inventory: list[SportObjectInventoryBaseSchema] | None = []
 
     @field_validator("tags")
     def validate_tags(cls, value: list[SportBaseSchema]) -> list[SportBaseSchema]:
