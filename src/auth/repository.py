@@ -1,11 +1,18 @@
 import uuid
-from typing import Any, Type
+from typing import Any, List, Type
 
 from fastapi_filter.contrib.sqlalchemy import Filter
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.auth.models import User, UserProfile, UserProfileImage
+from src.auth.models import (
+    FriendStatus,
+    User,
+    UserProfile,
+    UserProfileImage,
+    friendships,
+)
 from src.auth.schemas import (
     UserProfileCreateSchema,
     UserProfileImageCreateSchema,
@@ -112,7 +119,6 @@ class UserProfileRepository(SQLAlchemyRepository):
             if filter:
                 stmt = filter.filter(stmt)
                 stmt = filter.sort(stmt)
-                print(stmt)
 
             try:
                 result = await session.execute(stmt)
@@ -153,3 +159,115 @@ class UserProfileImageRepository(SQLAlchemyRepository):
                 return user_profile.images
             else:
                 return None
+
+
+class UserFriendsRepository(SQLAlchemyRepository):
+    def __init__(self, db_session: AsyncSession, model: Type[ModelType] = User) -> None:
+        super().__init__(model, db_session)
+
+    async def create_friendship(self, user_id: uuid.UUID, friend_id: uuid.UUID, status: FriendStatus = FriendStatus.PENDING) -> bool:
+        """Create a friendship record with the given status."""
+        async with self.db_session as session:
+            # Load user with friend_requests_sent eagerly
+            stmt = select(self.model).where(self.model.id == user_id).options(
+                selectinload(self.model.friend_requests_sent))
+            result = await session.execute(stmt)
+            user = result.unique().scalar_one_or_none()
+
+            # Load friend
+            friend = await session.get(self.model, friend_id)
+
+            if user and friend:
+                user.friend_requests_sent.append(friend)
+                await session.commit()
+                return True
+            return False
+
+    async def update_friendship_status(self, user_id: uuid.UUID, friend_id: uuid.UUID, status: FriendStatus) -> bool:
+        """Update the status of a friendship."""
+        async with self.db_session as session:
+            stmt = update(friendships).where(
+                friendships.c.user_id == user_id,
+                friendships.c.friend_id == friend_id
+            ).values(status=status)
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
+
+    async def get_friendship(self, user_id: uuid.UUID, friend_id: uuid.UUID) -> FriendStatus | None:
+        """Get the status of a friendship."""
+        async with self.db_session as session:
+            stmt = select(friendships.c.status).where(
+                friendships.c.user_id == user_id,
+                friendships.c.friend_id == friend_id
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
+    async def get_friends(self, user_id: uuid.UUID, filter=None, limit: int = 100, offset: int = 0) -> List[User]:
+        """Get all accepted friends for a user."""
+        async with self.db_session as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.id == user_id)
+                .options(selectinload(self.model.friends))
+                .limit(limit)
+                .offset(offset)
+            )
+            if filter:
+                stmt = filter.filter(stmt)
+                stmt = filter.sort(stmt)
+            result = await session.execute(stmt)
+            user = result.unique().scalar_one_or_none()
+            return user.friends if user else []
+
+    async def get_friend_requests_sent(self, user_id: uuid.UUID, filter=None, limit: int = 100, offset: int = 0) -> List[User]:
+        """Get all sent friend requests for a user."""
+        async with self.db_session as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.id == user_id)
+                .options(selectinload(self.model.friend_requests_sent))
+                .limit(limit)
+                .offset(offset)
+            )
+            if filter:
+                stmt = filter.filter(stmt)
+                stmt = filter.sort(stmt)
+            result = await session.execute(stmt)
+            user = result.unique().scalar_one_or_none()
+            return user.friend_requests_sent if user else []
+
+    async def get_friend_requests_received(self, user_id: uuid.UUID, filter=None, limit: int = 100, offset: int = 0) -> List[User]:
+        """Get all received friend requests for a user."""
+        async with self.db_session as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.id == user_id)
+                .options(selectinload(self.model.friend_requests_received))
+                .limit(limit)
+                .offset(offset)
+            )
+            if filter:
+                stmt = filter.filter(stmt)
+                stmt = filter.sort(stmt)
+            result = await session.execute(stmt)
+            user = result.unique().scalar_one_or_none()
+            return user.friend_requests_received if user else []
+
+    async def get_blocked_users(self, user_id: uuid.UUID, filter=None, limit: int = 100, offset: int = 0) -> List[User]:
+        """Get all blocked users for a user."""
+        async with self.db_session as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.id == user_id)
+                .options(selectinload(self.model.blocked_users))
+                .limit(limit)
+                .offset(offset)
+            )
+            if filter:
+                stmt = filter.filter(stmt)
+                stmt = filter.sort(stmt)
+            result = await session.execute(stmt)
+            user = result.unique().scalar_one_or_none()
+            return user.blocked_users if user else []

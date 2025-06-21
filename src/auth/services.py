@@ -1,16 +1,18 @@
 import uuid
-from typing import Callable
+from typing import Callable, List
 
 from fastapi import HTTPException, UploadFile
 from fastapi_filter.contrib.sqlalchemy import Filter
 from fastapi_users.exceptions import UserAlreadyExists
 
-from src.auth.filters import UserProfileFilter
 from src.auth.manager import (
     get_async_session_context,
     get_user_db_context,
     get_user_manager_context,
 )
+from src.auth.models import FriendStatus
+
+# Assuming this exists for User model validation
 from src.auth.schemas import (
     UserCreateSchema,
     UserProfileCreateSchema,
@@ -18,6 +20,9 @@ from src.auth.schemas import (
     UserProfileImageSchema,
     UserProfileSchema,
     UserProfileUpdateSchema,
+)
+from src.auth.schemas import (
+    UserReadSchema as UserSchema,  # TODO: Remove this kind stuff
 )
 from src.s3_service import S3BucketService, s3_bucket_service_factory
 from src.unitofwork import SQLAlchemyUnitOfWork
@@ -170,3 +175,109 @@ async def create_user(email: str, password: str, is_superuser: bool = False):
     except UserAlreadyExists:
         print(f"User {email} already exists")
         raise
+
+
+class UserFriendsSQLAlchemyService:
+    def __init__(self, uow_factory: Callable[[], SQLAlchemyUnitOfWork] = SQLAlchemyUnitOfWork) -> None:
+        self._uow_factory = uow_factory
+
+    async def send_friend_request(self, user_id: uuid.UUID, friend_id: uuid.UUID) -> bool:
+        """Send a friend request from user_id to friend_id."""
+        async with self._uow_factory() as uow:
+            if user_id == friend_id:
+                raise HTTPException(
+                    status_code=400, detail="Cannot send friend request to self")
+
+            existing_status = await uow.user_friends.get_friendship(user_id, friend_id)
+            if existing_status:
+                raise HTTPException(
+                    status_code=400, detail=f"Friendship status already exists: {existing_status.name}")
+            # NOTE: Return something else?
+            success = await uow.user_friends.create_friendship(user_id, friend_id, FriendStatus.PENDING)
+            return success
+
+    async def accept_friend_request(self, user_id: uuid.UUID, friend_id: uuid.UUID) -> bool:
+        """Accept a friend request from friend_id to user_id."""
+        async with self._uow_factory() as uow:
+            existing_status = await uow.user_friends.get_friendship(friend_id, user_id)
+            if existing_status != FriendStatus.PENDING:
+                raise HTTPException(
+                    status_code=400, detail="No pending friend request found")
+
+            success = await uow.user_friends.update_friendship_status(friend_id, user_id, FriendStatus.ACCEPTED)
+            if success:
+                await uow.commit()
+            return success
+
+    async def decline_friend_request(self, user_id: uuid.UUID, friend_id: uuid.UUID) -> bool:
+        """Decline a friend request from friend_id to user_id."""
+        async with self._uow_factory() as uow:
+            existing_status = await uow.user_friends.get_friendship(friend_id, user_id)
+            if existing_status != FriendStatus.PENDING:
+                raise HTTPException(
+                    status_code=400, detail="No pending friend request found")
+
+            success = await uow.user_friends.update_friendship_status(friend_id, user_id, FriendStatus.DECLINED)
+            if success:
+                await uow.commit()
+            return success
+
+    async def block_user(self, user_id: uuid.UUID, block_id: uuid.UUID) -> bool:
+        """Block a user (block_id) by user_id."""
+        async with self._uow_factory() as uow:
+            if user_id == block_id:
+                raise HTTPException(
+                    status_code=400, detail="Cannot block self")
+
+            existing_status = await uow.user_friends.get_friendship(user_id, block_id)
+            if existing_status == FriendStatus.BLOCKED:
+                raise HTTPException(
+                    status_code=400, detail="User already blocked")
+
+            success = await uow.user_friends.update_friendship_status(user_id, block_id, FriendStatus.BLOCKED)
+            if success:
+                await uow.commit()
+            return success
+
+    async def unblock_user(self, user_id: uuid.UUID, block_id: uuid.UUID) -> bool:
+        """Unblock a user (block_id) by user_id."""
+        async with self._uow_factory() as uow:
+            existing_status = await uow.user_friends.get_friendship(user_id, block_id)
+            if existing_status != FriendStatus.BLOCKED:
+                raise HTTPException(
+                    status_code=400, detail="User is not blocked")
+
+            success = await uow.user_friends.update_friendship_status(user_id, block_id, FriendStatus.DECLINED)
+            if success:
+                await uow.commit()
+            return success
+
+    async def get_friends(self, user_id: uuid.UUID, filter: Filter | None = None) -> List[UserSchema]:
+        """Get all accepted friends for a user."""
+        async with self._uow_factory() as uow:
+            friends = await uow.user_friends.get_friends(user_id, filter=filter)
+            return [UserSchema.model_validate(friend) for friend in friends]
+
+    async def get_friend_requests_sent(self, user_id: uuid.UUID, filter: Filter | None = None) -> List[UserSchema]:
+        """Get all sent friend requests for a user."""
+        async with self._uow_factory() as uow:
+            requests = await uow.user_friends.get_friend_requests_sent(user_id, filter=filter)
+            return [UserSchema.model_validate(request) for request in requests]
+
+    async def get_friend_requests_received(self, user_id: uuid.UUID, filter: Filter | None = None) -> List[UserSchema]:
+        """Get all received friend requests for a user."""
+        async with self._uow_factory() as uow:
+            requests = await uow.user_friends.get_friend_requests_received(user_id, filter=filter)
+            return [UserSchema.model_validate(request) for request in requests]
+
+    async def get_blocked_users(self, user_id: uuid.UUID, filter: Filter | None = None) -> List[UserSchema]:
+        """Get all blocked users for a user."""
+        async with self._uow_factory() as uow:
+            blocked_users = await uow.user_friends.get_blocked_users(user_id, filter=filter)
+            return [UserSchema.model_validate(user) for user in blocked_users]
+
+    async def is_blocked(self, user_id: uuid.UUID, target_id: uuid.UUID) -> bool:
+        """Check if target_id is blocked by user_id."""
+        async with self._uow_factory() as uow:
+            status = await uow.user_friends.get_friendship(user_id, target_id)
+            return status == FriendStatus.BLOCKED

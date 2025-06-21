@@ -1,3 +1,4 @@
+from enum import IntEnum
 import uuid
 from datetime import datetime
 
@@ -18,7 +19,9 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    and_,
 )
+from sqlalchemy.sql.sqltypes import Enum  # Explicitly import SQLAlchemy Enum
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -30,11 +33,34 @@ from src.sports.models import Sport
 # metadata = Base.metadata
 
 
+class FriendStatus(IntEnum):
+    PENDING = 1
+    ACCEPTED = 2
+    DECLINED = 3
+    BLOCKED = 4
+
+
 user_profiles_sports = Table(
     'user_profiles_sports',
     Base.metadata,
     Column('user_profile_id', ForeignKey('user_profile.id'), primary_key=True),
     Column('sport_id', ForeignKey(Sport.id), primary_key=True),
+)
+
+
+# Friendship table for managing friend relationships and blocks
+friendships = Table(
+    'friendships',
+    Base.metadata,
+    Column('user_id', ForeignKey('user_account.id'), primary_key=True),
+    Column('friend_id', ForeignKey('user_account.id'), primary_key=True),
+    Column('status', Enum(FriendStatus),
+           nullable=False, default=FriendStatus.PENDING),
+    Column('created_at', DateTime(timezone=True),
+           server_default=func.now(), nullable=False),
+    Column('updated_at', DateTime(timezone=True),
+           server_default=func.now(), onupdate=func.now(), nullable=False),
+    UniqueConstraint('user_id', 'friend_id', name='unique_friendship')
 )
 
 
@@ -45,8 +71,6 @@ class OAuthAccount(SQLAlchemyBaseOAuthAccountTableUUID, Base):
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
-    # NOTE: since 'user' is a reserved name in PostgreSQL.
-    # Also this way we decompose 'user' to 'user_account' and 'user_profile'
     __tablename__ = "user_account"
 
     oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
@@ -54,8 +78,51 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
     profile: Mapped["UserProfile"] = relationship(
         back_populates="user_account")
-    # created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
-    # last_edited: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+    # Add relationships for friends and blocked users
+    # Add relationships for friends and blocked users
+    friends: Mapped[list["User"]] = relationship(
+        secondary=friendships,
+        primaryjoin=lambda: and_(
+            User.id == friendships.c.user_id,
+            friendships.c.status == FriendStatus.ACCEPTED
+        ),
+        secondaryjoin=lambda: User.id == friendships.c.friend_id,
+        lazy="selectin"
+    )
+
+    friend_requests_sent: Mapped[list["User"]] = relationship(
+        secondary=friendships,
+        primaryjoin=lambda: and_(
+            User.id == friendships.c.user_id,
+            friendships.c.status == FriendStatus.PENDING
+        ),
+        secondaryjoin=lambda: User.id == friendships.c.friend_id,
+        lazy="selectin",
+        overlaps="friends"  # Declare overlap with friends
+    )
+
+    friend_requests_received: Mapped[list["User"]] = relationship(
+        secondary=friendships,
+        primaryjoin=lambda: and_(
+            User.id == friendships.c.friend_id,
+            friendships.c.status == FriendStatus.PENDING
+        ),
+        secondaryjoin=lambda: User.id == friendships.c.user_id,
+        lazy="selectin",
+        overlaps="friend_requests_sent,friends"  # Declare overlaps
+    )
+
+    blocked_users: Mapped[list["User"]] = relationship(
+        secondary=friendships,
+        primaryjoin=lambda: and_(
+            User.id == friendships.c.user_id,
+            friendships.c.status == FriendStatus.BLOCKED
+        ),
+        secondaryjoin=lambda: User.id == friendships.c.friend_id,
+        lazy="selectin",
+        overlaps="friend_requests_received,friend_requests_sent,friends"  # Declare overlaps
+    )
 
 
 class UserProfile(Base):
@@ -69,7 +136,7 @@ class UserProfile(Base):
 
     first_name: Mapped[str] = mapped_column(String(150))
     last_name: Mapped[str] = mapped_column(String(150))
-    # birthday: Mapped[date] = mapped_column(Date) correct way to store age
+    # birthday: Mapped[date] = mapped_column(Date) # correct way to store age
     age: Mapped[int] = mapped_column()
     gender: Mapped[int] = mapped_column(SmallInteger())
     height: Mapped[int] = mapped_column()
