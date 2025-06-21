@@ -10,6 +10,8 @@ from src.auth.models import UserProfile
 
 class UserProfileFilter(Filter):
     gender: Literal["0", "1"] | None = None
+    age__lt: int | None = None
+    age__gte: int | None = None
     sports: SportFilter | None = FilterDepends(
         with_prefix("sports", SportFilter))
     order_by: list[str] | None = None
