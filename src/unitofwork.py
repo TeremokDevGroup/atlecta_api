@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from src.auth.models import UserProfile, UserProfileImage
-from src.auth.repository import UserProfileImageRepository, UserProfileRepository
+from src.auth.models import User, UserProfile, UserProfileImage
+from src.auth.repository import UserFriendsRepository, UserProfileImageRepository, UserProfileRepository
 from src.chat.models import Attachment, Chat, ChatMember, Group, Message
 from src.chat.repository import (
     AttachmentRepository,
@@ -63,6 +63,8 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
             db_session=self.session, model=UserProfile)
         self.user_profile_images = UserProfileImageRepository(
             db_session=self.session, model=UserProfileImage)
+        self.user_friends = UserFriendsRepository(
+            db_session=self.session, model=User)
 
         self.chats = ChatRepository(
             db_session=self.session, model=Chat)
