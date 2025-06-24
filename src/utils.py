@@ -22,7 +22,6 @@ def parse_pydantic_schema(schema):
                 if is_pydantic(value):
                     parsed_schema[key] = value.Meta.orm_model(
                         **value.model_dump())
-        except AttributeError:
-            raise AttributeError(
-                "Found nested Pydantic model but Meta.orm_model was not specified.")
+        except Exception as e:
+            print(e)
     return parsed_schema
