@@ -6,7 +6,6 @@ services:
       - 443:443
     configs:
       - source: nginx_config
-        # target: /etc/nginx/nginx.conf
         target: /etc/nginx/user_conf.d/myapp.conf
     env_file:
       - nginx-certbot.env
@@ -36,13 +35,9 @@ services:
 
   minio:
     image: minio/minio:latest
-    command: server --console-address ":9001" /data/
-    ports:
-      - "9001:9001"
-      - "9000:9000"
+    command: server --console-address ":9001" /data
     environment:
-      # MINIO_SERVER_URL: "${HOST_ADDRESS}"
-      # MINIO_BROWSER_REDIRECT_URL: "${HOST_ADDRESS}/minio/"
+      MINIO_BROWSER_REDIRECT_URL: "https://images.altecta.ru/console/"
       MINIO_ROOT_USER: ${S3_ACCESS}
       MINIO_ROOT_PASSWORD: ${S3_SECRET}
     volumes:
@@ -57,8 +52,6 @@ services:
 
   redis:
     image: redis:latest
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     command: ["redis-server", "--appendonly", "yes"] # Enable AOF persistence
@@ -84,9 +77,8 @@ services:
     networks:
       - private
       - public
-      # - default
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/healthcheck"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 2
@@ -106,8 +98,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    ports:
-      - "5173:5173" # Expose frontend on port 5173
     depends_on:
       - atlecta_api
     networks:
