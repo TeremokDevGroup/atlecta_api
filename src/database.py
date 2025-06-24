@@ -18,7 +18,8 @@ engine = create_async_engine(SQLALCHEMY_DATABASE_URL, future=True,
                              max_overflow=10,  # Maximum number of connections to create beyond pool_size
                              pool_recycle=3600,  # Recycle connections after this many seconds
                              pool_timeout=30,  # Seconds to wait for a connection before timing out
-                             # pool_pre_ping=True,  # Test connection before using it
+                             pool_pre_ping=True,  # Test connection before using it
+                             # echo=True
                              )
 
 
