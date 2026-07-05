@@ -38,7 +38,5 @@ build-backend = "hatchling.build"
 pythonpath = [
   ".",
   "src",
-  "/home/zawarudo/.pyenv/shims/python",
-  "/usr/bin/python",
 ]
 asyncio_mode = "auto"
